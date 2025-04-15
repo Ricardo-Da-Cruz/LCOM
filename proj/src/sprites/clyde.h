@@ -2,7 +2,7 @@
 #ifndef CLYDE_XPM_H
 #define CLYDE_XPM_H
 
-static char *section_0[] = {
+static const char* clyde_0[] = {
   "16 16 5 1",
   "A c #000000",
   "B c #FFB751",
@@ -27,7 +27,7 @@ static char *section_0[] = {
   "DDDDDDDDDDDDDDDD",
 };
 
-static char *section_1[] = {
+static const char* clyde_1[] = {
   "16 16 5 1",
   "A c #000000",
   "B c #FFB751",
@@ -52,7 +52,7 @@ static char *section_1[] = {
   "DDDDDDDDDDDDDDDD",
 };
 
-static char *section_2[] = {
+static const char* clyde_2[] = {
   "16 16 5 1",
   "A c #000000",
   "B c #FFB751",
@@ -77,7 +77,7 @@ static char *section_2[] = {
   "DDDDDDDDDDDDDDDD",
 };
 
-static char *section_3[] = {
+static const char* clyde_3[] = {
   "16 16 5 1",
   "A c #000000",
   "B c #FFB751",
@@ -102,7 +102,7 @@ static char *section_3[] = {
   "DDDDDDDDDDDDDDDD",
 };
 
-static char *section_4[] = {
+static const char* clyde_4[] = {
   "16 16 5 1",
   "A c #000000",
   "B c #FFB751",
@@ -127,7 +127,7 @@ static char *section_4[] = {
   "DDDDDDDDDDDDDDDD",
 };
 
-static char *section_5[] = {
+static const char* clyde_5[] = {
   "16 16 5 1",
   "A c #000000",
   "B c #FFB751",
@@ -152,7 +152,7 @@ static char *section_5[] = {
   "DDDDDDDDDDDDDDDD",
 };
 
-static char *section_6[] = {
+static const char* clyde_6[] = {
   "16 16 5 1",
   "A c #000000",
   "B c #FFB751",
@@ -177,7 +177,7 @@ static char *section_6[] = {
   "DDDDDDDDDDDDDDDD",
 };
 
-static char *section_7[] = {
+static const char* clyde_7[] = {
   "16 16 5 1",
   "A c #000000",
   "B c #FFB751",
@@ -202,15 +202,15 @@ static char *section_7[] = {
   "DDDDDDDDDDDDDDDD",
 };
 
-static char **clyde[] = {
-  section_0,
-  section_1,
-  section_2,
-  section_3,
-  section_4,
-  section_5,
-  section_6,
-  section_7,
+static const char* const* clyde[] = {
+  clyde_0,
+  clyde_1,
+  clyde_2,
+  clyde_3,
+  clyde_4,
+  clyde_5,
+  clyde_6,
+  clyde_7,
 };
 
 #endif /* CLYDE_XPM_H */

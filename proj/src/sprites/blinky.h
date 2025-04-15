@@ -2,7 +2,7 @@
 #ifndef BLIKY_XPM_H
 #define BLIKY_XPM_H
 
-static char *section_0[] = {
+static const char* blinky_0[] = {
   "16 16 5 1",
   "A c #000000",
   "B c #2121FF",
@@ -27,7 +27,7 @@ static char *section_0[] = {
   "CCCCCCCCCCCCCCCC",
 };
 
-static char *section_1[] = {
+static const char* blinky_1[] = {
   "16 16 5 1",
   "A c #000000",
   "B c #2121FF",
@@ -52,7 +52,7 @@ static char *section_1[] = {
   "CCCCCCCCCCCCCCCC",
 };
 
-static char *section_2[] = {
+static const char* blinky_2[] = {
   "16 16 5 1",
   "A c #000000",
   "B c #2121FF",
@@ -77,7 +77,7 @@ static char *section_2[] = {
   "CCCCCCCCCCCCCCCC",
 };
 
-static char *section_3[] = {
+static const char* blinky_3[] = {
   "16 16 5 1",
   "A c #000000",
   "B c #2121FF",
@@ -102,7 +102,7 @@ static char *section_3[] = {
   "CCCCCCCCCCCCCCCC",
 };
 
-static char *section_4[] = {
+static const char* blinky_4[] = {
   "16 16 5 1",
   "A c #000000",
   "B c #2121FF",
@@ -127,7 +127,7 @@ static char *section_4[] = {
   "CCCCCCCCCCCCCCCC",
 };
 
-static char *section_5[] = {
+static const char* blinky_5[] = {
   "16 16 5 1",
   "A c #000000",
   "B c #2121FF",
@@ -152,7 +152,7 @@ static char *section_5[] = {
   "CCCCCCCCCCCCCCCC",
 };
 
-static char *section_6[] = {
+static const char* blinky_6[] = {
   "16 16 5 1",
   "A c #000000",
   "B c #2121FF",
@@ -177,7 +177,7 @@ static char *section_6[] = {
   "CCCCCCCCCCCCCCCC",
 };
 
-static char *section_7[] = {
+static const char* blinky_7[] = {
   "16 16 5 1",
   "A c #000000",
   "B c #2121FF",
@@ -202,15 +202,15 @@ static char *section_7[] = {
   "CCCCCCCCCCCCCCCC",
 };
 
-static char **blinky[] = {
-  section_0,
-  section_1,
-  section_2,
-  section_3,
-  section_4,
-  section_5,
-  section_6,
-  section_7,
+static const char* const* blinky[] = {
+  blinky_0,
+  blinky_1,
+  blinky_2,
+  blinky_3,
+  blinky_4,
+  blinky_5,
+  blinky_6,
+  blinky_7,
 };
 
 #endif /* BLIKY_XPM_H */

@@ -2,7 +2,7 @@
 #ifndef PACMAN_XPM_H
 #define PACMAN_XPM_H
 
-static char *section_0[] = {
+static const char* pacman_0[] = {
   "16 16 3 1",
   "A c #000000",
   "B c None",
@@ -25,7 +25,7 @@ static char *section_0[] = {
   "BBBBBBBBBBBBBBBB",
 };
 
-static char *section_1[] = {
+static const char* pacman_1[] = {
   "16 16 3 1",
   "A c #000000",
   "B c None",
@@ -48,7 +48,7 @@ static char *section_1[] = {
   "BBBBBBBBBBBBBBBB",
 };
 
-static char *section_2[] = {
+static const char* pacman_2[] = {
   "16 16 3 1",
   "A c #000000",
   "B c None",
@@ -71,7 +71,7 @@ static char *section_2[] = {
   "BBBBBBBBBBBBBBBB",
 };
 
-static char *section_3[] = {
+static const char* pacman_3[] = {
   "16 16 3 1",
   "A c #000000",
   "B c None",
@@ -94,11 +94,11 @@ static char *section_3[] = {
   "BBBBBBBBBBBBBBBB",
 };
 
-static char **xpm_sections[] = {
-  section_0,
-  section_1,
-  section_2,
-  section_3,
+static const char* const* pacman[] = {
+  pacman_0,
+  pacman_1,
+  pacman_2,
+  pacman_3,
 };
 
 #endif /* PACMAN_XPM_H */

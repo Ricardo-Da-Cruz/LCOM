@@ -2,7 +2,7 @@
 #ifndef GHOST_XPM_H
 #define GHOST_XPM_H
 
-static char *section_0[] = {
+static const char* ghost_0[] = {
   "16 16 4 1",
   "A c #FFB7AE",
   "B c #000000",
@@ -26,7 +26,7 @@ static char *section_0[] = {
   "DDDDDDDDDDDDDDDD",
 };
 
-static char *section_1[] = {
+static const char* ghost_1[] = {
   "16 16 4 1",
   "A c #FFB7AE",
   "B c #000000",
@@ -50,7 +50,7 @@ static char *section_1[] = {
   "DDDDDDDDDDDDDDDD",
 };
 
-static char *section_2[] = {
+static const char* ghost_2[] = {
   "16 16 4 1",
   "A c #FF0000",
   "B c #000000",
@@ -74,7 +74,7 @@ static char *section_2[] = {
   "CCCCCCCCCCCCCCCC",
 };
 
-static char *section_3[] = {
+static const char* ghost_3[] = {
   "16 16 4 1",
   "A c #FF0000",
   "B c #000000",
@@ -98,11 +98,11 @@ static char *section_3[] = {
   "CCCCCCCCCCCCCCCC",
 };
 
-static char **ghost[] = {
-  section_0,
-  section_1,
-  section_2,
-  section_3,
+static const char* const*ghost[] = {
+  ghost_0,
+  ghost_1,
+  ghost_2,
+  ghost_3,
 };
 
 #endif /* GHOST_XPM_H */

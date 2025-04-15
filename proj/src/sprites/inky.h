@@ -2,7 +2,7 @@
 #ifndef INKY_XPM_H
 #define INKY_XPM_H
 
-static char *section_0[] = {
+static const char* inky_0[] = {
   "16 16 5 1",
   "A c #000000",
   "B c #00FFFF",
@@ -27,7 +27,7 @@ static char *section_0[] = {
   "DDDDDDDDDDDDDDDD",
 };
 
-static char *section_1[] = {
+static const char* inky_1[] = {
   "16 16 5 1",
   "A c #000000",
   "B c #00FFFF",
@@ -52,7 +52,7 @@ static char *section_1[] = {
   "DDDDDDDDDDDDDDDD",
 };
 
-static char *section_2[] = {
+static const char* inky_2[] = {
   "16 16 5 1",
   "A c #000000",
   "B c #00FFFF",
@@ -77,7 +77,7 @@ static char *section_2[] = {
   "DDDDDDDDDDDDDDDD",
 };
 
-static char *section_3[] = {
+static const char* inky_3[] = {
   "16 16 5 1",
   "A c #000000",
   "B c #00FFFF",
@@ -102,7 +102,7 @@ static char *section_3[] = {
   "DDDDDDDDDDDDDDDD",
 };
 
-static char *section_4[] = {
+static const char* inky_4[] = {
   "16 16 5 1",
   "A c #000000",
   "B c #00FFFF",
@@ -127,7 +127,7 @@ static char *section_4[] = {
   "DDDDDDDDDDDDDDDD",
 };
 
-static char *section_5[] = {
+static const char* inky_5[] = {
   "16 16 5 1",
   "A c #000000",
   "B c #00FFFF",
@@ -152,7 +152,7 @@ static char *section_5[] = {
   "DDDDDDDDDDDDDDDD",
 };
 
-static char *section_6[] = {
+static const char* inky_6[] = {
   "16 16 5 1",
   "A c #000000",
   "B c #00FFFF",
@@ -177,7 +177,7 @@ static char *section_6[] = {
   "DDDDDDDDDDDDDDDD",
 };
 
-static char *section_7[] = {
+static const char* inky_7[] = {
   "16 16 5 1",
   "A c #000000",
   "B c #00FFFF",
@@ -202,15 +202,15 @@ static char *section_7[] = {
   "DDDDDDDDDDDDDDDD",
 };
 
-static char **inky[] = {
-  section_0,
-  section_1,
-  section_2,
-  section_3,
-  section_4,
-  section_5,
-  section_6,
-  section_7,
+static const char* const* inky[] = {
+  inky_0,
+  inky_1,
+  inky_2,
+  inky_3,
+  inky_4,
+  inky_5,
+  inky_6,
+  inky_7,
 };
 
 #endif /* INKY_XPM_H */

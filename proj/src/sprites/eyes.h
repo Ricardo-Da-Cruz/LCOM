@@ -2,7 +2,7 @@
 #ifndef EYES_XPM_H
 #define EYES_XPM_H
 
-static char *section_0[] = {
+static const char* eyes_0[] = {
   "16 16 4 1",
   "A c #000000",
   "B c #2121FF",
@@ -26,7 +26,7 @@ static char *section_0[] = {
   "CCCCCCCCCCCCCCCC",
 };
 
-static char *section_1[] = {
+static const char* eyes_1[] = {
   "16 16 4 1",
   "A c #000000",
   "B c #2121FF",
@@ -50,7 +50,7 @@ static char *section_1[] = {
   "CCCCCCCCCCCCCCCC",
 };
 
-static char *section_2[] = {
+static const char* eyes_2[] = {
   "16 16 4 1",
   "A c #000000",
   "B c #2121FF",
@@ -74,7 +74,7 @@ static char *section_2[] = {
   "CCCCCCCCCCCCCCCC",
 };
 
-static char *section_3[] = {
+static const char* eyes_3[] = {
   "16 16 4 1",
   "A c #000000",
   "B c #2121FF",
@@ -98,11 +98,11 @@ static char *section_3[] = {
   "CCCCCCCCCCCCCCCC",
 };
 
-static char **eyes[] = {
-  section_0,
-  section_1,
-  section_2,
-  section_3,
+static const char* const*eyes[] = {
+  eyes_0,
+  eyes_1,
+  eyes_2,
+  eyes_3,
 };
 
 #endif /* EYES_XPM_H */

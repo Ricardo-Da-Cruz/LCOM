@@ -2,7 +2,7 @@
 #ifndef PACMAN_DEATH_XPM_H
 #define PACMAN_DEATH_XPM_H
 
-static char *section_0[] = {
+static const char* death_0[] = {
   "16 16 3 1",
   "A c #000000",
   "B c None",
@@ -25,7 +25,7 @@ static char *section_0[] = {
   "BBBBBBBBBBBBBBBB",
 };
 
-static char *section_1[] = {
+static const char* death_1[] = {
   "16 16 3 1",
   "A c #000000",
   "B c None",
@@ -48,7 +48,7 @@ static char *section_1[] = {
   "BBBBBBBBBBBBBBBB",
 };
 
-static char *section_2[] = {
+static const char* death_2[] = {
   "16 16 3 1",
   "A c #000000",
   "B c None",
@@ -71,7 +71,7 @@ static char *section_2[] = {
   "BBBBBBBBBBBBBBBB",
 };
 
-static char *section_3[] = {
+static const char* death_3[] = {
   "16 16 3 1",
   "A c #000000",
   "B c None",
@@ -94,7 +94,7 @@ static char *section_3[] = {
   "BBBBBBBBBBBBBBBB",
 };
 
-static char *section_4[] = {
+static const char* death_4[] = {
   "16 16 3 1",
   "A c #000000",
   "B c None",
@@ -117,7 +117,7 @@ static char *section_4[] = {
   "BBBBBBBBBBBBBBBB",
 };
 
-static char *section_5[] = {
+static const char* death_5[] = {
   "16 16 3 1",
   "A c #000000",
   "B c None",
@@ -140,7 +140,7 @@ static char *section_5[] = {
   "BBBBBBBBBBBBBBBB",
 };
 
-static char *section_6[] = {
+static const char* death_6[] = {
   "16 16 3 1",
   "A c #000000",
   "B c None",
@@ -163,7 +163,7 @@ static char *section_6[] = {
   "BBBBBBBBBBBBBBBB",
 };
 
-static char *section_7[] = {
+static const char* death_7[] = {
   "16 16 3 1",
   "A c #000000",
   "B c None",
@@ -186,7 +186,7 @@ static char *section_7[] = {
   "BBBBBBBBBBBBBBBB",
 };
 
-static char *section_8[] = {
+static const char* death_8[] = {
   "16 16 3 1",
   "A c #000000",
   "B c None",
@@ -209,7 +209,7 @@ static char *section_8[] = {
   "BBBBBBBBBBBBBBBB",
 };
 
-static char *section_9[] = {
+static const char* death_9[] = {
   "16 16 3 1",
   "A c #000000",
   "B c None",
@@ -232,7 +232,7 @@ static char *section_9[] = {
   "BBBBBBBBBBBBBBBB",
 };
 
-static char *section_10[] = {
+static const char* death_10[] = {
   "16 16 3 1",
   "A c #000000",
   "B c None",
@@ -255,7 +255,7 @@ static char *section_10[] = {
   "BBBBBBBBBBBBBBBB",
 };
 
-static char *section_11[] = {
+static const char* death_11[] = {
   "16 16 3 1",
   "A c #000000",
   "B c None",
@@ -278,19 +278,19 @@ static char *section_11[] = {
   "BBBBBCBBBCBBBBBB",
 };
 
-static char **pacman_death_anim[] = {
-  section_0,
-  section_1,
-  section_2,
-  section_3,
-  section_4,
-  section_5,
-  section_6,
-  section_7,
-  section_8,
-  section_9,
-  section_10,
-  section_11,
+static const char* const* death_anim[] = {
+  death_0,
+  death_1,
+  death_2,
+  death_3,
+  death_4,
+  death_5,
+  death_6,
+  death_7,
+  death_8,
+  death_9,
+  death_10,
+  death_11,
 };
 
 #endif /* PACMAN_DEATH_XPM_H */
