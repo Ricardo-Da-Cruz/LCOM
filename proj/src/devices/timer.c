@@ -3,7 +3,7 @@
 #include <stdint.h>
 
 #include "i8254.h"
-int timer_hook_id = 2;
+int timer_hook_id = 1;
 int counter = 0;
 
 
