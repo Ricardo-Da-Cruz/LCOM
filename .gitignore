@@ -1,3 +1,4 @@
 *.o
-*.dbinit
-
+*.gdbinit
+output.txt
+trace.txt
