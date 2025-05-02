@@ -81,9 +81,12 @@ int (proj_end)(){
 }
 
 int (proj_menu)(){
-
     vg_draw_rectangle(vmi.XResolution / 2 - 75, vmi.YResolution / 2, 150, 25, 0xFF0000);
     vg_draw_rectangle(vmi.XResolution / 2 - 75, vmi.YResolution / 2 + 40, 150, 25, 0xFFFFFF);
+
+    if(refresh_screen()){
+        return 4;
+    }
 
     int ipc_status;
     message msg;
@@ -109,14 +112,17 @@ int (proj_menu)(){
                             if(scancode == ESC_MAKE_CODE) return EXIT;
                             if(scancode == W_MAKE_CODE || scancode == S_MAKE_CODE){
                                 selected = (selected + 1) % 2;
-                                vg_draw_rectangle(vmi.XResolution / 2 - 75, vmi.YResolution / 2, 150, 25, selected == 0 ? 0xFF0000 : 0xFFFFFF);
-                                vg_draw_rectangle(vmi.XResolution / 2 - 75, vmi.YResolution / 2 + 40, 150, 25, selected == 0 ? 0xFFFFFF : 0xFF0000);
                             }
                             if(scancode == ENTER_MAKE_CODE){
-
                                 return selected == 0 ? SPAWNING : EXIT;
                             }
+                            vg_draw_rectangle(vmi.XResolution / 2 - 75, vmi.YResolution / 2, 150, 25, selected == 0 ? 0xFF0000 : 0xFFFFFF);
+                            vg_draw_rectangle(vmi.XResolution / 2 - 75, vmi.YResolution / 2 + 40, 150, 25, selected == 0 ? 0xFFFFFF : 0xFF0000);
                             printf("scancode: %02x\n", scancode);
+                        }
+                        if(refresh_screen()){
+                            printf("refresh_screen failed\n");
+                            return 4;
                         }
                     }
                     break;
@@ -124,6 +130,7 @@ int (proj_menu)(){
                     break; /* no other notifications expected: do nothing */	
             }
         }
+        
     }
 
     return EXIT;
@@ -154,6 +161,7 @@ int(proj_main_loop)(int argc, char* argv[]) {
                 break;
             default:
                 printf("invalid state\n");
+                proj_end();
                 return 1;
         }
     }  

@@ -6,21 +6,23 @@
 vbe_mode_info_t vmi;
 
 void* video_mem;
+void* comp_video_mem;
 
 int (map_vram)(unsigned int vram_base, unsigned int vram_size){
     int r;
     struct minix_mem_range mr;
     mr.mr_base = (phys_bytes) vram_base;
-    mr.mr_limit = mr.mr_base + vram_size;
-
+    mr.mr_limit = mr.mr_base + vram_size * 2;
 
     if((r = sys_privctl(SELF, SYS_PRIV_ADD_MEM, &mr))){
         printf("sys_privctl (ADD_MEM) failed: %d\n", r);    
         return 1;
     }
     
-    
-    video_mem = vm_map_phys(SELF, (void *)mr.mr_base, vram_size);
+    video_mem = vm_map_phys(SELF, (void *)mr.mr_base, vram_size * 2);
+    comp_video_mem = video_mem;
+    memset(video_mem, 0, vram_size * 2);
+
     if(video_mem == MAP_FAILED){
         printf("couldn’t map video memory");
         return 1;
@@ -33,15 +35,15 @@ int (set_graphics_mode)(uint16_t mode){
     reg86_t r;
     memset(&r, 0, sizeof(r));
 
-    r.al = SET_VBE_MODE_AL;
-    r.ah = VBE_AH;
-    r.bx = LINEAR_FRAMEBUFFER | mode;
     r.intno = INT_VIDEO_CARD;
+    r.ah = VBE_AH;
+    r.al = SET_VBE_MODE_AL;
+    r.bx = LINEAR_FRAMEBUFFER | mode;
 
     if (vbe_get_mode_info(mode, &vmi))
         return 1;
 
-    if ((map_vram(vmi.PhysBasePtr, vmi.XResolution * vmi.YResolution * (vmi.BitsPerPixel / 8))))
+    if ((map_vram(vmi.PhysBasePtr, vmi.XResolution * vmi.YResolution * ((vmi.BitsPerPixel + 7) / 8))))
         return 1;
 
     if (sys_int86(&r))
@@ -51,7 +53,53 @@ int (set_graphics_mode)(uint16_t mode){
         return 1;
 
     if (r.ah != 0x00)
-        return 1;    
+        return 1;
+
+    return 0;
+}
+
+int refresh_screen(){
+    reg86_t r;
+    memset(&r, 0, sizeof(r));
+
+    r.intno = INT_VIDEO_CARD;
+    r.ah = VBE_AH;
+    r.al = SET_DISPLAY_START_AL;
+    r.bx = 0x00;
+    r.cx = 0;
+    r.dx = video_mem == comp_video_mem? 0 : vmi.YResolution;
+
+    if (sys_int86(&r)){
+        printf("sys_int86 failed\n");
+        return 1;
+    }
+
+    if (r.al != 0x4f || r.ah != 0x00){
+        printf("al: %x ah: %x\n", r.al, r.ah);
+        return 1;
+    }
+
+    if (video_mem == comp_video_mem)
+        video_mem = ((char*)comp_video_mem) + vmi.XResolution * vmi.YResolution * ((vmi.BitsPerPixel + 7) / 8);
+    else
+        video_mem = comp_video_mem;
+    
+    memset(video_mem, 0, vmi.XResolution * vmi.YResolution * ((vmi.BitsPerPixel + 7) / 8));
+
+    return 0;
+}
+
+int (exit_graphics_mode)(void){
+    reg86_t r;
+    memset(&r, 0, sizeof(r));
+    r.al = BIOS_TEXT_MODE;
+    r.ah = BIOS_AH;
+    r.intno = INT_VIDEO_CARD;
+
+    free(video_mem);
+
+    if (sys_int86(&r))
+        return 1;
 
     return 0;
 }
@@ -79,21 +127,7 @@ int (vg_draw_rectangle)(uint16_t x, uint16_t y, uint16_t width, uint16_t height,
     return 0;
 }
 
-int (exit_graphics_mode)(void){
-    reg86_t r;
-    memset(&r, 0, sizeof(r));
-    r.al = BIOS_TEXT_MODE;
-    r.ah = BIOS_AH;
-    r.intno = INT_VIDEO_CARD;
-
-    if (sys_int86(&r))
-        return 1;
-
-    return 0;
-}
-
 //only works for 8:8:8 probably
-
 int (draw_xpm)(xpm_image_t xpm, uint16_t x, uint16_t y){
     int a = 0;
     int num_bytes = ((vmi.BitsPerPixel + 7) / 8);

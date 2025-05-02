@@ -134,6 +134,10 @@ int game(){
                             state = (state + 1) % 4;
                             vg_draw_rectangle(0, 144, 16, 16, 0x000000);
                             draw_xpm(ghost_xpm[state],0 , 144);
+                            if(refresh_screen()){
+                                printf("refresh_screen failed\n");
+                                return 4;
+                            }
                         }
                     }
                     break;

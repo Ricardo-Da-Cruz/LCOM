@@ -9,6 +9,7 @@
 #define GET_VBE_INFO_AL 0x01
 #define SET_VBE_MODE_AL 0x02
 #define GET_VBE_CONTR_INFO_AL 0x00
+#define SET_DISPLAY_START_AL 0x07
 
 #define R_1024_X_768_I 0x105
 #define R_640_X_480_D 0x110
