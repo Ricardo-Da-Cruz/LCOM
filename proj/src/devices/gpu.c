@@ -121,8 +121,33 @@ int (vg_draw_hline)(uint16_t x, uint16_t y, uint16_t len, uint32_t color){
 }
 
 int (vg_draw_rectangle)(uint16_t x, uint16_t y, uint16_t width, uint16_t height, uint32_t color){
+    int bytes_per_pixel = (vmi.BitsPerPixel + 7) / 8;
+    uint8_t *coords = ((uint8_t*)video_mem) + (y * vmi.XResolution + x) * bytes_per_pixel;
+    uint8_t bytes[] = {color >> 24, color >> 16, color >> 8, color};
     for (int i = 0; i < height; i++){
-        vg_draw_hline(x, y + i, width, color);
+        for (int j = 0; j < width; j++){
+            for (int k = 4 - bytes_per_pixel; k < 4; k++){
+                *coords = bytes[k];
+                coords++;
+            }
+        }
+        coords += (vmi.XResolution - width) * bytes_per_pixel;
+    }
+    return 0;
+}
+
+int (vg_draw_rectangle_xpm)(uint16_t x, uint16_t y, uint16_t width, uint16_t height, uint32_t color, xpm_image_t img){
+    int bytes_per_pixel = (vmi.BitsPerPixel + 7) / 8;
+    uint8_t *coords = ((uint8_t*)img.bytes) + (y * img.width + x) * bytes_per_pixel;
+    uint8_t bytes[] = {color >> 24, color >> 16, color >> 8, color};
+    for (int i = 0; i < height; i++){
+        for (int j = 0; j < width; j++){
+            for (int k = 4 - bytes_per_pixel; k < 4; k++){
+                *coords = bytes[k];
+                coords++;
+            }
+        }
+        coords += (img.width - width) * bytes_per_pixel;
     }
     return 0;
 }

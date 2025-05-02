@@ -84,40 +84,10 @@ int loadAssets(){
     return 0;
 }
 
-void draw_maze(){
-    printf("drawing maze\n");
-}
-
 int game(){
     printf("loading assets\n");
 
     loadAssets();
-
-    printf("drawing assets\n");
-
-    for (int i = 0; i < 4; i++)
-    {
-        vg_draw_rectangle(0, 0, 16, 16, 0x000000);
-        draw_xpm(pacman_xpm[i], i * 16, 0);
-        draw_xpm(pacman2_xpm[i], i * 16,16);
-        draw_xpm(eyes_xpm[i], i * 16, 32);
-        draw_xpm(ghost_xpm[i], i * 16, 48);
-    }
-
-    for (int i = 0; i < 8; i++)
-    {
-        draw_xpm(blinky_xpm[i], i * 16, 64);
-        draw_xpm(clyde_xpm[i], i * 16, 80);
-        draw_xpm(inky_xpm[i], i * 16, 96);
-        draw_xpm(pinky_xpm[i], i * 16, 112);
-    }
-
-    for (int i = 0; i < 12; i++)
-    {
-        draw_xpm(death_anim_xpm[i], i * 16, 128);
-    }
-
-    printf("waiting for ESC key\n");
 
     int ipc_status;
     message msg;
@@ -125,42 +95,50 @@ int game(){
     int micros = 0;
     int state = 0;
 
+    //add pellets to maze xpm
+    for(int i = 0; i < 30; i++){
+        for(int j = 0; j < 28; j++){
+            if(pellet_matrix[i][j] == 1){ 
+                vg_draw_rectangle_xpm(j * 8 + 6, i * 8 + 4, 2, 2, pellet_color, maze_xpm);
+            }
+        }
+    }
+
+    printf("waiting for ESC key\n");
 
     while(1) {
         if ( (r = driver_receive(ANY, &msg, &ipc_status)) != 0) { 
             printf("driver_receive failed with: %d", r);
             continue;
         }
+    
+        if (is_ipc_notify(ipc_status)) { /* received notification */
+        switch (_ENDPOINT_P(msg.m_source)) {
+            case HARDWARE: /* hardware interrupt notification */				
+                if (msg.m_notify.interrupts & 1 << 0) { /* subscribed interrupt */
+                    kbc_ih();
+                    if (verify_status()){
+                        printf("scancode: %02x\n", scancode);
+                        if(scancode == ESC_MAKE_CODE) return 7;
+                    }
+                }
+                if (msg.m_notify.interrupts & 1 << 1) { /* subscribed interrupt */
+                    micros = (micros + 1) % 15;
+                    if(micros == 0){
+                        state = (state + 1) % 4;
 
-          scancode = 0;
-      
-          if (is_ipc_notify(ipc_status)) { /* received notification */
-            switch (_ENDPOINT_P(msg.m_source)) {
-                case HARDWARE: /* hardware interrupt notification */				
-                    if (msg.m_notify.interrupts & 1 << 0) { /* subscribed interrupt */
-                        kbc_ih();
-                        if (verify_status()){
-                            printf("scancode: %02x\n", scancode);
-                            if(scancode == ESC_MAKE_CODE) return 7;
+                        draw_xpm(maze_xpm, 0, 0);
+                        draw_xpm(ghost_xpm[state], 10, 5);
+                        if(refresh_screen()){
+                            printf("refresh_screen failed\n");
+                            return 4;
                         }
                     }
-                    if (msg.m_notify.interrupts & 1 << 1) { /* subscribed interrupt */
-                        micros = (micros + 1) % 15;
-                        if(micros == 0){
-                            state = (state + 1) % 4;
-
-                            draw_xpm(maze_xpm, 0, 0);
-                            draw_xpm(ghost_xpm[state], 10, 5);
-                            if(refresh_screen()){
-                                printf("refresh_screen failed\n");
-                                return 4;
-                            }
-                        }
-                    }
-                    break;
-                default:
-                    break; /* no other notifications expected: do nothing */	
-            }
+                }
+                break;
+            default:
+                break; /* no other notifications expected: do nothing */	
+        }
         }
     }
 
