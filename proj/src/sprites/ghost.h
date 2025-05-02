@@ -98,7 +98,7 @@ static const char* ghost_3[] = {
   "CCCCCCCCCCCCCCCC",
 };
 
-static const char* const* ghost[] = {
+static const char* const* ghosts[] = {
   ghost_0,
   ghost_1,
   ghost_2,

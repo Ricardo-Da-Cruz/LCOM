@@ -2,3 +2,4 @@
 *.gdbinit
 output.txt
 trace.txt
+proj/src/proj
