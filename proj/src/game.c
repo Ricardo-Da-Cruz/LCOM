@@ -17,6 +17,9 @@
 #include "sprites/pinky.h"
 #include "sprites/pacman_death_anim.h"
 #include "sprites/ghost.h"
+#include "sprites/letters.h"
+#include "sprites/numbers.h"
+#include "sprites/maze.h"
 
 xpm_image_t pacman_xpm[4];
 xpm_image_t pacman2_xpm[4];
@@ -27,6 +30,9 @@ xpm_image_t pinky_xpm[8];
 xpm_image_t eyes_xpm[8];
 xpm_image_t death_anim_xpm[12];
 xpm_image_t ghost_xpm[4];
+xpm_image_t letters_xpm[26];
+xpm_image_t numbers_xpm[10];
+xpm_image_t maze_xpm;
 
 enum ghost_indexes {
     right_1,
@@ -64,6 +70,16 @@ int loadAssets(){
     for(int i = 0; i < 12; i++){
         xpm_load(death_anim[i], XPM_8_8_8, &death_anim_xpm[i]);
     }
+    
+    for(int i = 0; i < 26; i++){
+        xpm_load(letters[i], XPM_8_8_8, &letters_xpm[i]);
+    }
+
+    for(int i = 0; i < 10; i++){
+        xpm_load(numbers[i], XPM_8_8_8, &numbers_xpm[i]);
+    }
+
+    xpm_load(maze, XPM_8_8_8, &maze_xpm);
 
     return 0;
 }
@@ -132,8 +148,9 @@ int game(){
                         micros = (micros + 1) % 15;
                         if(micros == 0){
                             state = (state + 1) % 4;
-                            vg_draw_rectangle(0, 144, 16, 16, 0x000000);
-                            draw_xpm(ghost_xpm[state],0 , 144);
+
+                            draw_xpm(maze_xpm, 0, 0);
+                            draw_xpm(ghost_xpm[state], 10, 5);
                             if(refresh_screen()){
                                 printf("refresh_screen failed\n");
                                 return 4;

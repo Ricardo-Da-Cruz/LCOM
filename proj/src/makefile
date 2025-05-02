@@ -7,7 +7,8 @@ PROG=proj
 # source code files to be compiled
 SRCS = main.c game.c game.h
 SRCS += utils.c utils.h timer.c timer.h i8254.h vbe.h gpu.c gpu.h keyboard.c keyboard.h i8042.h
-SRCS += sprites/blinky.h sprites/clyde.h sprites/eyes.h sprites/inky.h sprites/pacman.h sprites/pacman2.h sprites/pinky.h
+SRCS += sprites/blinky.h sprites/clyde.h sprites/eyes.h sprites/inky.h sprites/pacman.h sprites/pacman2.h 
+SRCS += sprites/pinky.h sprites/pacman_death_anim.h sprites/ghost.h sprites/lettets.h sprites/numbers.h sprites/maze.h
 
 # Set the search path for source files
 VPATH = devices:sprites:.
