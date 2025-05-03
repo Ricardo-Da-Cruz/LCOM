@@ -141,49 +141,80 @@ int loadAssets(){
     return 0;
 }
 
+int try_move(int direction){
+    switch (direction){
+        case pacman_right:
+            if (maze_matrix[pacman_c.y / 8][(pacman_c.x + 8) / 8] == 0
+                && maze_matrix[(pacman_c.y + 7) / 8][(pacman_c.x + 8) / 8] == 0){
+                pacman_c.x++;
+                return 1;
+            }
+            break;
+        case pacman_left:
+            if (maze_matrix[pacman_c.y / 8][(pacman_c.x - 1) / 8] == 0
+                && maze_matrix[(pacman_c.y + 7) / 8][(pacman_c.x - 1) / 8] == 0){
+                pacman_c.x--;
+                return 1;
+            } 
+            break;
+        case pacman_up:
+            if (maze_matrix[(pacman_c.y - 1) / 8][(pacman_c.x + 7) / 8] == 0
+                && maze_matrix[(pacman_c.y - 1) / 8][pacman_c.x / 8] == 0){
+                pacman_c.y--;
+                return 1;
+            }
+            break;
+        case pacman_down:
+            if (maze_matrix[(pacman_c.y + 8) / 8][(pacman_c.x + 7) / 8] == 0
+                && maze_matrix[(pacman_c.y + 8) / 8][pacman_c.x / 8] == 0){
+                pacman_c.y++;
+                return 1;
+            }
+            break;
+    }
+
+    return 0;
+}
+
 void (game_logic)(){
     //move pacman and ghosts
     //check for collisions
     //needs input buffering to prevent the need of pixel perfect movement
-    switch (direction){
-        case pacman_right:
-            //printf("right %d %d\n", pacman_c.y / 8, (pacman_c.x + 1) / 8);
-            if (maze_matrix[pacman_c.y / 8][(pacman_c.x + 8) / 8] == 0
-                && maze_matrix[(pacman_c.y + 7) / 8][(pacman_c.x + 8) / 8] == 0
-            ) pacman_c.x++;
-            break;
-        case pacman_left:
-            //printf("left %d %d\n", pacman_c.y / 8, (pacman_c.x - 1) / 8);
-            //printf("left %d %d\n", pacman_c.y, pacman_c.x);
-            if (maze_matrix[pacman_c.y / 8][(pacman_c.x - 1) / 8] == 0
-                && maze_matrix[(pacman_c.y + 7) / 8][(pacman_c.x - 1) / 8] == 0
-            ) pacman_c.x--;
-            break;
-        case pacman_up:
-            //printf("up %d %d\n", (pacman_c.y - 1) / 8, pacman_c.x / 8);
-            if (maze_matrix[(pacman_c.y - 1) / 8][(pacman_c.x + 7) / 8] == 0
-                && maze_matrix[(pacman_c.y - 1) / 8][pacman_c.x / 8] == 0
-            ) pacman_c.y--;
-            break;
-        case pacman_down:
-            //printf("down %d %d\n", (pacman_c.y + 1) / 8, pacman_c.x / 8);
-            if (maze_matrix[(pacman_c.y + 8) / 8][(pacman_c.x + 7) / 8] == 0
-                && maze_matrix[(pacman_c.y + 8) / 8][pacman_c.x / 8] == 0
-            ) pacman_c.y++;
-            break;
+    if(next_direction_time != 0){
+        printf("next direction time: %d\n", next_direction_time);
+        printf("next direction: %d\n", next_direction);
+        printf("%d %d\n", pacman_c.x, pacman_c.y);
+        printf("%d %d\n", pacman_c.x / 8, pacman_c.y / 8);
+        printf("%d %d\n", pacman_c.x % 8, pacman_c.y % 8);
+        printf("maze_matrix[%d][%d] = %d\n", pacman_c.y / 8, (pacman_c.x + 8) / 8, maze_matrix[pacman_c.y / 8][(pacman_c.x + 8) / 8]);
+        printf("maze_matrix[%d][%d] = %d\n", (pacman_c.y + 7) / 8, (pacman_c.x + 8) / 8,maze_matrix[(pacman_c.y + 7) / 8][(pacman_c.x + 8) / 8]);
+        if(try_move(next_direction)){
+            printf("move success\n");
+            next_direction_time = 0;
+            direction = next_direction;
+        }else{
+            printf("move failed\n");
+            try_move(direction);
+            next_direction_time--;
+        }
+    }else{
+        if(try_move(direction) == 0){
+            printf("%d %d\n", pacman_c.x, pacman_c.y);
+            printf("%d %d\n", pacman_c.x / 8, pacman_c.y / 8);
+            printf("%d %d\n", pacman_c.x % 8, pacman_c.y % 8);
+        }
     }
 
     //ghost pathfinding
-
 
     //check for pellet pickup
     //check for energizer pickup
     if(current_pellet_matrix[pacman_c.y / 8][pacman_c.x / 8] == 1){
         num_pellets--;
-        vg_draw_rectangle_xpm(pacman_c.x, pacman_c.y, 8, 8, 0, maze_xpm);
+        vg_draw_rectangle_xpm(pacman_c.x - pacman_c.x % 8, pacman_c.y - pacman_c.y % 8, 8, 8, 0, maze_xpm);
     }else if(current_pellet_matrix[pacman_c.y / 8][pacman_c.x / 8] == 2){
         num_pellets--;
-        vg_draw_rectangle_xpm(pacman_c.x, pacman_c.y, 8, 8, 0, maze_xpm);
+        vg_draw_rectangle_xpm(pacman_c.x - pacman_c.x % 8, pacman_c.y - pacman_c.y % 8, 8, 8, 0, maze_xpm);
         energized = true;
         energized_time = 200;
     }
@@ -235,6 +266,7 @@ int game(){
     direction = 0;
     ghost_state = 0;
     pacman_state = 0;
+    next_direction_time = 0;
 
     printf("waiting for ESC key\n");
 
@@ -246,16 +278,20 @@ int game(){
             if (verify_status()){
                 switch (scancode){
                     case W_MAKE_CODE:
-                        direction = pacman_up;
+                        next_direction = pacman_up;
+                        next_direction_time = 4;
                         break;
                     case A_MAKE_CODE:
-                        direction = pacman_left;
+                        next_direction = pacman_left;
+                        next_direction_time = 4;
                         break;
                     case S_MAKE_CODE:
-                        direction = pacman_down;
+                        next_direction = pacman_down;
+                        next_direction_time = 4;
                         break;
                     case D_MAKE_CODE:
-                        direction = pacman_right;
+                        next_direction = pacman_right;
+                        next_direction_time = 4;
                         break;
                     case ESC_MAKE_CODE:
                         return 7;
