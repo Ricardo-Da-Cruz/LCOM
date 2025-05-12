@@ -12,25 +12,11 @@
 
 typedef enum {
     MENU,
-    SPAWNING,
     PLAYING,
-    ENERGIZED,
-    DIED,
     LOST,
     WON,
     EXIT,
 }game_state;
-
-enum ghost_indexes {
-    right_1,
-    right_2,
-    left_1,
-    left_2,
-    up_1,
-    up_2,
-    down_1,
-    down_2,
-};
 
 uint8_t kbd_arq_set = 0;
 uint8_t timer_arq_set = 1;
@@ -41,11 +27,11 @@ int main(int argc, char *argv[]) {
   
     // enables to log function invocations that are being "wrapped" by LCF
     // [comment this out if you don't want/need it]
-    lcf_trace_calls("/home/lcom/labs/lab5/trace.txt");
+    lcf_trace_calls("/home/lcom/labs/proj/src/trace.txt");
   
     // enables to save the output of printf function calls on a file
     // [comment this out if you don't want/need it]
-    lcf_log_output("/home/lcom/labs/lab5/output.txt");
+    lcf_log_output("/home/lcom/labs/proj/src/output.txt");
   
     // handles control over to LCF
     // [LCF handles command line arguments and invokes the right function]
@@ -114,7 +100,7 @@ int (proj_menu)(){
                                 selected = (selected + 1) % 2;
                             }
                             if(scancode == ENTER_MAKE_CODE){
-                                return selected == 0 ? SPAWNING : EXIT;
+                                return selected == 0 ? PLAYING : EXIT;
                             }
                             vg_draw_rectangle(vmi.XResolution / 2 - 75, vmi.YResolution / 2, 150, 25, selected == 0 ? 0xFF0000 : 0xFFFFFF);
                             vg_draw_rectangle(vmi.XResolution / 2 - 75, vmi.YResolution / 2 + 40, 150, 25, selected == 0 ? 0xFFFFFF : 0xFF0000);
@@ -154,7 +140,7 @@ int(proj_main_loop)(int argc, char* argv[]) {
             case MENU:
                 state = proj_menu();
                 break;
-            case SPAWNING:
+            case PLAYING:
                 state = game();
                 break;
             case EXIT:
