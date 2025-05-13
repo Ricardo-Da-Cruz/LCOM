@@ -213,7 +213,7 @@ void pathfind(ghost *g, int target_x, int target_y){
     if (g->direction != left){
         if (maze_matrix[g->c.y / 8][(g->c.x + 8) / 8] == 0){
             int d = distance(g->c.x + 8, g->c.y, target_x, target_y);
-            if (d < distance){
+            if (d < ghost_d){
                 ghost_d = d;
                 g->direction = right;
             }
@@ -223,7 +223,7 @@ void pathfind(ghost *g, int target_x, int target_y){
     if (g->direction != right){
         if (maze_matrix[g->c.y / 8][(g->c.x - 1) / 8] == 0){
             int d = distance(g->c.x - 1, g->c.y, target_x, target_y);
-            if (d < distance){
+            if (d < ghost_d){
                 ghost_d = d;
                 g->direction = left;
             }
@@ -233,7 +233,7 @@ void pathfind(ghost *g, int target_x, int target_y){
     if (g->direction != down){
         if (maze_matrix[(g->c.y - 1) / 8][(g->c.x + 7) / 8] == 0){
             int d = distance(g->c.x, g->c.y - 1, target_x, target_y);
-            if (d < distance){
+            if (d < ghost_d){
                 ghost_d = d;
                 g->direction = up;
 
@@ -244,7 +244,7 @@ void pathfind(ghost *g, int target_x, int target_y){
     if (g->direction != up){
         if (maze_matrix[(g->c.y + 8) / 8][(g->c.x + 7) / 8] == 0){
                 int d = distance(g->c.x, g->c.y + 8, target_x, target_y);
-                if (d < distance){
+                if (d < ghost_d){
                     ghost_d = d;
                     g->direction = down;
                 }
@@ -276,6 +276,7 @@ void scatter(ghost *g, int idx){
 }
 
 void chase(ghost *g, int idx){
+    coords target = {0,0};
     switch (idx){
         case blinky_idx:
             //Blinky wants to move to pacman
@@ -289,13 +290,13 @@ void chase(ghost *g, int idx){
                 pathfind(&ghosts_state[idx], 13 * 8 + 4, 14 * 8 + 4);
             break;
         case inky_idx:
+            target = (coords) {pacman_c.x - (ghosts_state[blinky_idx].c.x - pacman_c.x), pacman_c.y - (ghosts_state[blinky_idx].c.y - pacman_c.y)};
             //Inky wants to move to the reflection of pacman through blinky
-            coords target = {pacman_c.x - (ghosts_state[blinky_idx].c.x - pacman_c.x), pacman_c.y - (ghosts_state[blinky_idx].c.y - pacman_c.y)};
             pathfind(&ghosts_state[idx], target.x, target.y);
             break;
         case pinky_idx:
             //Pinky wants to move to a position 4 blocks in front of pacman
-            coords target = {pacman_c.x, pacman_c.y};
+            target = (coords) {pacman_c.x, pacman_c.y};
             if (direction == right) target.x += 32;
             else if (direction == left) target.x -= 32;
             else if (direction == up) target.y -= 32;
