@@ -392,6 +392,7 @@ static const char* letter_25[] = {
   "BBBBBBBB",
 };
 
+
 static const char* const* letters[] = {
   letter_0,
   letter_1,

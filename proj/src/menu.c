@@ -31,10 +31,20 @@ int main() {
 }
 
 Menu *newMenu(char *title) {
-    struct menu *m = malloc(sizeof(Menu)); // missing error checking
-    m->title;
-    m->num = m->size = 0;
-    menuAdjust(m); // if needed increase entries[] size
+    struct menu *m = malloc(sizeof(Menu)); 
+    if (m == NULL) {
+        printf("Error: Out of memory\n");
+        exit(1);
+    }
+    m->title = strdup(title); // Corrigido: Copiando o título corretamente
+    m->num = 0;
+    m->size = 10; // Tamanho inicial razoável
+    m->entries = malloc(m->size * sizeof(MenuEntry*));
+    if (m->entries == NULL) {
+        printf("Error: Out of memory\n");
+        free(m);
+        exit(1);
+    }
     return m;
 }
 
