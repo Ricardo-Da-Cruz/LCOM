@@ -90,8 +90,10 @@ int (proj_menu)(){
         vg_draw_rectangle(vmi.XResolution / 2 - 75, vmi.YResolution / 2, 150, 25, selected == 0 ? 0xFF0000 : 0xFFFFFF); 
         vg_draw_rectangle(vmi.XResolution / 2 - 75, vmi.YResolution / 2 + 40, 150, 25, selected == 1 ? 0xFF0000 : 0xFFFFFF); 
 
-        draw_text("PLAY", vmi.XResolution / 2 - 20, vmi.YResolution / 2 + 6);
-        draw_text("EXIT", vmi.XResolution / 2 - 20, vmi.YResolution / 2 + 46);
+        draw_text("PACKMAN", vmi.XResolution / 2 - 30, vmi.YResolution / 2 - 30, 0xFFFF0);
+
+        draw_text("PLAY", vmi.XResolution / 2 - 20, vmi.YResolution / 2 + 6, 0xFFFFF);
+        draw_text("EXIT", vmi.XResolution / 2 - 20, vmi.YResolution / 2 + 46, 0x00000);
 
         if (refresh_screen()) {
             printf("refresh_screen failed\n");

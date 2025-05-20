@@ -392,6 +392,35 @@ static const char* letter_25[] = {
   "BBBBBBBB",
 };
 
+static const char* letter_26[] = {
+  "8 8 3 1",
+  "A c #000000",
+  "B c None",
+  "C c #E0DDFF",
+  "BBBBBBCC",
+  "BBBBBCCB",
+  "BBBCCCBB",
+  "BBBCCBBB",
+  "BBBCCBBB",
+  "BBBCCCBB",
+  "BBBBBCCB",
+  "BBBBBBCC",
+};
+
+static const char* letter_27[] = {
+  "8 8 3 1",
+  "A c #000000",
+  "B c None",
+  "C c #E0DDFF",
+  "CCBBBBBB",
+  "BCBBBBBB",
+  "BBCCBBBB",
+  "BBBCCBBB",
+  "BBBCCBBB",
+  "BBCCBBBB",
+  "BCBBBBBB",
+};
+
 static const char* const* letters[] = {
   letter_0,
   letter_1,
@@ -419,6 +448,8 @@ static const char* const* letters[] = {
   letter_23,
   letter_24,
   letter_25,
+  letter_26,
+  letter_27,
 };
 
 #endif /* XPM_SECTIONS_H */
