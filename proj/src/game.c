@@ -1,3 +1,4 @@
+
 #include <lcom/lcf.h>
 #include <limits.h>
 #include <math.h>
@@ -66,8 +67,8 @@ typedef struct{
 
 enum ghost_status{
     normal,
-    jailed,
-    dead,
+    jailed, // the ghost is in the ghost house and is not free to move
+    dead, // the ghost is dead and has to go back to the ghost house
 };
 
 typedef struct{
@@ -86,6 +87,7 @@ int pacman_state;
 int energized_time;
 int num_pellets;
 
+// for input buffering
 int next_direction;
 int next_direction_time;
 
@@ -119,7 +121,7 @@ int loadAssets(){
     for(int i = 0; i < 12; i++){
         xpm_load(death_anim[i], XPM_8_8_8, &death_anim_xpm[i]);
     }
-    
+
     for(int i = 0; i < 26; i++){
         xpm_load(letters[i], XPM_8_8_8, &letters_xpm[i]);
     }
@@ -132,7 +134,7 @@ int loadAssets(){
 
     for(int i = 0; i < 30; i++){
         for(int j = 0; j < 28; j++){
-            if(pellet_matrix[i][j] == 1){ 
+            if(pellet_matrix[i][j] == 1){
                 vg_draw_rectangle_xpm(j * 8 + 6, i * 8 + 4, 2, 2, pellet_color, maze_xpm);
             }else if(pellet_matrix[i][j] == 2){
                 vg_draw_rectangle_xpm(j * 8 + 5, i * 8 + 3, 4, 4, pellet_color, maze_xpm);
@@ -146,32 +148,9 @@ int loadAssets(){
     return 0;
 }
 
-int abs(int x) {
-    return x >= 0 ? x : -x;
-}
-
-void debug_ghost_movement(ghost *g, int idx) {
-    printf("Ghost %d at (%d,%d) moving in direction %d\n",
-           idx, g->c.x, g->c.y, g->direction);
-
-    // Verificar os valores da matriz do labirinto nas quatro direções
-    printf("  Maze values: Right=%d, Left=%d, Up=%d, Down=%d\n",
-           maze_matrix[g->c.y / 8][(g->c.x + 8) / 8],
-           maze_matrix[g->c.y / 8][(g->c.x - 1) / 8],
-           maze_matrix[(g->c.y - 1) / 8][g->c.x / 8],
-           maze_matrix[(g->c.y + 8) / 8][g->c.x / 8]);
-}
-
-
 int try_move(int direction){
     switch (direction){
         case right:
-            // Verificar teletransporte pelo túnel direito
-            if (pacman_c.x >= 27 * 8) {
-                pacman_c.x = 0;
-                return 1;
-            }
-            
             if (maze_matrix[pacman_c.y / 8][(pacman_c.x + 8) / 8] == 0
                 && maze_matrix[(pacman_c.y + 7) / 8][(pacman_c.x + 8) / 8] == 0){
                 pacman_c.x++;
@@ -179,17 +158,11 @@ int try_move(int direction){
             }
             break;
         case left:
-            // Verificar teletransporte pelo túnel esquerdo
-            if (pacman_c.x <= 0) {
-                pacman_c.x = 27 * 8;
-                return 1;
-            }
-            
             if (maze_matrix[pacman_c.y / 8][(pacman_c.x - 1) / 8] == 0
                 && maze_matrix[(pacman_c.y + 7) / 8][(pacman_c.x - 1) / 8] == 0){
                 pacman_c.x--;
                 return 1;
-            } 
+            }
             break;
         case up:
             if (maze_matrix[(pacman_c.y - 1) / 8][(pacman_c.x + 7) / 8] == 0
@@ -210,122 +183,182 @@ int try_move(int direction){
     return 0;
 }
 
-void move_ghost(ghost *g) {
-    int new_x = g->c.x;
-    int new_y = g->c.y;
+void move_ghost(ghost *g){
+    // Save original position in case we need to revert
+    int original_x = g->c.x;
+    int original_y = g->c.y;
 
-    // Calcular nova posição baseada na direção
-    switch (g->direction) {
+    // Try to move in the current direction
+    switch (g->direction){
         case right:
-            new_x++;
+            g->c.x++;
             break;
         case left:
-            new_x--;
+            g->c.x--;
             break;
         case up:
-            new_y--;
+            g->c.y--;
             break;
         case down:
-            new_y++;
+            g->c.y++;
             break;
     }
 
-    // Verificar teletransporte pelo túnel
-    if (new_x >= 27 * 8 + 8) {
-        new_x = 0;
-    } else if (new_x < 0) {
-        new_x = 27 * 8 + 4;
+    // Check if the new position is valid (not colliding with a wall)
+    // We need to check all corners of the ghost sprite
+    int top_left_x = g->c.x / 8;
+    int top_left_y = g->c.y / 8;
+    int bottom_right_x = (g->c.x + 7) / 8;  // Assuming ghost is 8x8 pixels
+    int bottom_right_y = (g->c.y + 7) / 8;
+
+    // If any corner is in a wall, revert the movement
+    if (maze_matrix[top_left_y][top_left_x] == 1 ||
+        maze_matrix[top_left_y][bottom_right_x] == 1 ||
+        maze_matrix[bottom_right_y][top_left_x] == 1 ||
+        maze_matrix[bottom_right_y][bottom_right_x] == 1) {
+        // Collision detected, revert to original position
+        g->c.x = original_x;
+        g->c.y = original_y;
+
+        // Choose a new random direction that's not the opposite of the current one
+        int new_direction;
+        do {
+            new_direction = rand() % 4;  // Random direction (0-3)
+            // Avoid choosing the opposite direction
+        } while ((new_direction == right && g->direction == left) ||
+                 (new_direction == left && g->direction == right) ||
+                 (new_direction == up && g->direction == down) ||
+                 (new_direction == down && g->direction == up));
+
+        g->direction = new_direction;
     }
 
-    // Verificar colisão com paredes (somente se estiver alinhado com a grade)
-    if (new_x % 8 == 0 && new_y % 8 == 0) {
-        int grid_x = new_x / 8;
-        int grid_y = new_y / 8;
+    // Handle tunnel wrapping (if ghost goes through the tunnel)
+    if (g->c.x < 0) {
+        g->c.x = 27 * 8;  // Wrap to right side
+    } else if (g->c.x > 27 * 8) {
+        g->c.x = 0;  // Wrap to left side
+    }
 
-        // Se há uma parede, não mover nesta direção
-        if (maze_matrix[grid_y][grid_x] == 1) {
-            // Escolher uma nova direção aleatória
-            int dirs[4] = {right, left, up, down};
-            g->direction = dirs[rand() % 4];
-            return;
+    // Check if the new position collides with a wall
+    if (maze_matrix[g->c.y / 8][g->c.x / 8] == 1 ||
+        maze_matrix[(g->c.y + 7) / 8][g->c.x / 8] == 1 ||
+        maze_matrix[g->c.y / 8][(g->c.x + 7) / 8] == 1 ||
+        maze_matrix[(g->c.y + 7) / 8][(g->c.x + 7) / 8] == 1) {
+        // If there's a collision, revert to the original position
+        g->c.x = original_x;
+        g->c.y = original_y;
+
+        // Choose a new random direction that doesn't lead to a wall
+        int new_direction;
+        int valid_direction_found = 0;
+        int attempts = 0;
+
+        while (!valid_direction_found && attempts < 4) {
+            new_direction = rand() % 4; // Random direction
+            attempts++;
+
+            // Test if the new direction is valid
+            int test_x = original_x;
+            int test_y = original_y;
+
+            switch (new_direction) {
+                case right:
+                    test_x++;
+                    break;
+                case left:
+                    test_x--;
+                    break;
+                case up:
+                    test_y--;
+                    break;
+                case down:
+                    test_y++;
+                    break;
+            }
+
+            // Check if the test position is valid
+            if (maze_matrix[test_y / 8][test_x / 8] == 0 &&
+                maze_matrix[(test_y + 7) / 8][test_x / 8] == 0 &&
+                maze_matrix[test_y / 8][(test_x + 7) / 8] == 0 &&
+                maze_matrix[(test_y + 7) / 8][(test_x + 7) / 8] == 0) {
+                valid_direction_found = 1;
+                g->direction = new_direction;
+            }
         }
     }
-
-    // Atualizar a posição se for válida
-    g->c.x = new_x;
-    g->c.y = new_y;
 }
-
-
 
 int distance(int x1, int y1, int x2, int y2){
     return (x1 - x2) * (x1 - x2) + (y1 - y2) * (y1 - y2);
 }
 
+// only works when the coords mod 8 == 0
 void pathfind(ghost *g, int target_x, int target_y){
-    // Armazenar a melhor direção e a menor distância
+    //check all directions except the one the ghost came from
     int ghost_d = INT_MAX;
-    int best_dir = g->direction; // Manter a direção atual como padrão
 
-    // Primeiro, garantir que estamos alinhados à grade (múltiplos de 8)
-    if (g->c.x % 8 != 0 || g->c.y % 8 != 0) {
-        return; // Não mudar de direção se não estivermos alinhados à grade
-    }
-
-    // Verificar se mover para a direita é válido (não é a direção oposta e não tem parede)
-    if (g->direction != left && maze_matrix[g->c.y / 8][(g->c.x + 8) / 8] == 0) {
-        int d = distance(g->c.x + 8, g->c.y, target_x, target_y);
-        if (d < ghost_d) {
-            ghost_d = d;
-            best_dir = right;
+    // right
+    if (g->direction != left){
+        if (maze_matrix[g->c.y / 8][(g->c.x + 8) / 8] == 0){
+            int d = distance(g->c.x + 8, g->c.y, target_x, target_y);
+            if (d < ghost_d){
+                ghost_d = d;
+                g->direction = right;
+            }
         }
     }
-
-    // Verificar se mover para a esquerda é válido
-    if (g->direction != right && maze_matrix[g->c.y / 8][(g->c.x - 1) / 8] == 0) {
-        int d = distance(g->c.x - 1, g->c.y, target_x, target_y);
-        if (d < ghost_d) {
-            ghost_d = d;
-            best_dir = left;
+    // left
+    if (g->direction != right){
+        if (maze_matrix[g->c.y / 8][(g->c.x - 1) / 8] == 0){
+            int d = distance(g->c.x - 1, g->c.y, target_x, target_y);
+            if (d < ghost_d){
+                ghost_d = d;
+                g->direction = left;
+            }
         }
     }
-
-    // Verificar se mover para cima é válido
-    if (g->direction != down && maze_matrix[(g->c.y - 1) / 8][g->c.x / 8] == 0) {
-        int d = distance(g->c.x, g->c.y - 1, target_x, target_y);
-        if (d < ghost_d) {
-            ghost_d = d;
-            best_dir = up;
+    // up
+    if (g->direction != down){
+        if (maze_matrix[(g->c.y - 1) / 8][g->c.x / 8] == 0 &&
+            maze_matrix[(g->c.y - 1) / 8][(g->c.x + 7) / 8] == 0){
+            int d = distance(g->c.x, g->c.y - 1, target_x, target_y);
+            if (d < ghost_d){
+                ghost_d = d;
+                g->direction = up;
+            }
         }
     }
-
-    // Verificar se mover para baixo é válido
-    if (g->direction != up && maze_matrix[(g->c.y + 8) / 8][g->c.x / 8] == 0) {
-        int d = distance(g->c.x, g->c.y + 8, target_x, target_y);
-        if (d < ghost_d) {
-            ghost_d = d;
-            best_dir = down;
+    // down
+    if (g->direction != up){
+        if (maze_matrix[(g->c.y + 8) / 8][g->c.x / 8] == 0 &&
+            maze_matrix[(g->c.y + 8) / 8][(g->c.x + 7) / 8] == 0){
+            int d = distance(g->c.x, g->c.y + 8, target_x, target_y);
+            if (d < ghost_d){
+                ghost_d = d;
+                g->direction = down;
+            }
         }
     }
-
-    // Definir a melhor direção encontrada
-    g->direction = best_dir;
 }
-
-
 
 void scatter(ghost *g, int idx){
     switch (idx){
         case blinky_idx:
+            //top right corner
             pathfind(g, 27 * 8 + 4, 4);
+
             break;
         case clyde_idx:
+            //bottom left corner
             pathfind(g, 4, 30 * 8 + 4);
             break;
         case inky_idx:
+            //bottom right corner
             pathfind(g, 27 * 8 + 4, 30 * 8 + 4);
             break;
         case pinky_idx:
+            //top left corner
             pathfind(g, 4, 4);
             break;
     }
@@ -336,109 +369,39 @@ void chase(ghost *g, int idx){
     coords target = {0,0};
     switch (idx){
         case blinky_idx:
-            pathfind(g, pacman_c.x, pacman_c.y);
+            //Blinky wants to move to pacman
+            pathfind(&ghosts_state[idx], pacman_c.x, pacman_c.y);
             break;
         case clyde_idx:
-            if (distance(g->c.x, g->c.y, pacman_c.x, pacman_c.y) > 64)
-                pathfind(g, pacman_c.x, pacman_c.y);
+            //Clyde wants to move to pacman if he is far away, otherwise he wants to move to the ghost house
+            if (distance(ghosts_state[idx].c.x, ghosts_state[idx].c.y, pacman_c.x, pacman_c.y) > 64)
+                pathfind(&ghosts_state[idx], pacman_c.x, pacman_c.y);
             else
-                pathfind(g, 13 * 8 + 4, 14 * 8 + 4);
+                pathfind(&ghosts_state[idx], 13 * 8 + 4, 14 * 8 + 4);
             break;
         case inky_idx:
             target = (coords) {pacman_c.x - (ghosts_state[blinky_idx].c.x - pacman_c.x), pacman_c.y - (ghosts_state[blinky_idx].c.y - pacman_c.y)};
-            pathfind(g, target.x, target.y);
+            //Inky wants to move to the reflection of pacman through blinky
+            pathfind(&ghosts_state[idx], target.x, target.y);
             break;
         case pinky_idx:
+            //Pinky wants to move to a position 4 blocks in front of pacman
             target = (coords) {pacman_c.x, pacman_c.y};
             if (direction == right) target.x += 32;
             else if (direction == left) target.x -= 32;
             else if (direction == up) target.y -= 32;
             else if (direction == down) target.y += 32;
-            pathfind(g, target.x, target.y);
+            pathfind(&ghosts_state[idx], target.x, target.y);
             break;
     }
 }
 
 
-void flee(ghost *g) {
-    int available_dirs[4] = {0, 0, 0, 0};
-    int count = 0;
 
-    // Verificar apenas direções opostas à direção do Pac-Man para uma fuga mais realista
-    if (g->direction != left && maze_matrix[g->c.y / 8][(g->c.x + 8) / 8] == 0) {
-        available_dirs[count++] = right;
-    }
-
-    if (g->direction != right && maze_matrix[g->c.y / 8][(g->c.x - 1) / 8] == 0) {
-        available_dirs[count++] = left;
-    }
-
-    if (g->direction != down && maze_matrix[(g->c.y - 1) / 8][(g->c.x + 7) / 8] == 0) {
-        available_dirs[count++] = up;
-    }
-
-    if (g->direction != up && maze_matrix[(g->c.y + 8) / 8][(g->c.x + 7) / 8] == 0) {
-        available_dirs[count++] = down;
-    }
-
-    if (count > 0) {
-        // Escolher uma direção aleatória mas preferindo direção oposta ao pacman
-        int farthest_dir = -1;
-        int max_dist = -1;
-
-        for (int i = 0; i < count; i++) {
-            int test_x = g->c.x;
-            int test_y = g->c.y;
-
-            // Simular movimento na direção disponível
-            switch (available_dirs[i]) {
-                case right: test_x += 8; break;
-                case left:  test_x -= 8; break;
-                case up:    test_y -= 8; break;
-                case down:  test_y += 8; break;
-            }
-
-            int dist = distance(test_x, test_y, pacman_c.x, pacman_c.y);
-            if (dist > max_dist) {
-                max_dist = dist;
-                farthest_dir = available_dirs[i];
-            }
-        }
-
-        g->direction = farthest_dir;
-    }
-
-    move_ghost(g);
-}
-
-
-void reset_game() {
-    for(int i = 0; i < 31; i++){
-        for(int j = 0; j < 28; j++){
-            current_pellet_matrix[i][j] = pellet_matrix[i][j];
-            if(pellet_matrix[i][j] == 1){ 
-                vg_draw_rectangle_xpm(j * 8 + 6, i * 8 + 4, 2, 2, pellet_color, maze_xpm);
-            }else if(pellet_matrix[i][j] == 2){
-                vg_draw_rectangle_xpm(j * 8 + 5, i * 8 + 3, 4, 4, pellet_color, maze_xpm);
-            }
-        }
-    }
-    
-    num_pellets = pellet_count;
-    pacman_c.x = 13 * 8;
-    pacman_c.y = 23 * 8;
-    direction = right;
-    next_direction_time = 0;
-    energized_time = 0;
-    
-    ghosts_state[0] = (ghost){ {13 * 8 + 4, 11 * 8}, up, 0, normal};
-    ghosts_state[1] = (ghost){ {11 * 8 + 4, 14 * 8 + 4}, up, 100, jailed};
-    ghosts_state[2] = (ghost){ {13 * 8 + 4, 14 * 8 + 4}, up, 200, jailed};
-    ghosts_state[3] = (ghost){ {15 * 8 + 4, 14 * 8 + 4}, up, 300, jailed};
-}
-
-
-void game_logic(){
+void (game_logic)(){
+    //move pacman
+    //check for collisions
+    //needs input buffering to prevent the need of pixel perfect movement
     if(next_direction_time != 0){
         if(try_move(next_direction)){
             next_direction_time = 0;
@@ -451,40 +414,51 @@ void game_logic(){
         try_move(direction);
     }
 
-    // Corrigido: Checagem de pellets
+    //check for pellet pickup and energizer pickup
     if(current_pellet_matrix[pacman_c.y / 8][pacman_c.x / 8] == 1){
         num_pellets--;
+        //remove pellet from maze xpm
         vg_draw_rectangle_xpm(pacman_c.x - pacman_c.x % 8, pacman_c.y - pacman_c.y % 8, 8, 8, 0, maze_xpm);
     }else if(current_pellet_matrix[pacman_c.y / 8][pacman_c.x / 8] == 2){
         num_pellets--;
-        vg_draw_rectangle_xpm(pacman_c.x - pacman_c.x % 8, pacman_c.y - pacman_c.y % 8, 8, 8, 0, maze_xpm);
+        //remove pellet from maze xpm
+        vg_draw_rectangle_xpm(pacman_c.x - pacman_c.x % 8 , pacman_c.y - pacman_c.y % 8, 8, 8, 0xFFFFFF, maze_xpm);
         energized_time = 200;
     }
     current_pellet_matrix[pacman_c.y / 8][pacman_c.x / 8] = 0;
 
+    //ghosts have two modes scatter and chase
+    //in scatter mode they move to a predefined position
+    //pathfind doesn't need to be optimal, just minimize the linear distance to the target
+    //only run pathfinding when the ghost reaches a crossroad that is marked by the target attribute
+    //ghost can't make 180 degree turns unless they get energized
+
+    /*
+        | Cycle # | Scatter Duration | Chase Duration                   |
+        | ------- | ---------------- | -------------------------------- |
+        | 1       | 7 seconds        | 20 seconds                       |
+        | 2       | 7 seconds        | 20 seconds                       |
+        | 3       | 5 seconds        | 20 seconds                       |
+        | 4       | 5 seconds        | until Pac-Man dies or level ends |
+    */
     for(int i = 0; i < 4; i++){
         if(ghosts_state[i].status == normal){
+            //ghost pathfinding
+            //move ghost
+            if (energized_time == 0){
 
-            debug_ghost_movement(&ghosts_state[i], i);
-            // Corrigido: Lógica para fantasmas em modo normal
-            if(ghosts_state[i].c.x % 8 == 0 && ghosts_state[i].c.y % 8 == 0){
-                if (energized_time > 0){
-                    flee(&ghosts_state[i]);
-                } else {
-                    // Alternar entre chase e scatter
-                    if ((micros / 300) % 2 == 0) {
-                        chase(&ghosts_state[i], i);
-                    } else {
-                        scatter(&ghosts_state[i], i);
-                    }
+                if(ghosts_state[i].c.x % 8 == 0 && ghosts_state[i].c.y % 8 == 0){
+                    chase(&ghosts_state[i], i);
                 }
-            } else {
                 move_ghost(&ghosts_state[i]);
+
+            }else{
+                //move ghost away from pacman
             }
         }else if(ghosts_state[i].status == dead){
+            //move ghost to ghost house
             if(ghosts_state[i].c.x == 13 * 8 + 4 && ghosts_state[i].c.y == 11 * 8){
                 ghosts_state[i].status = jailed;
-                ghosts_state[i].time = 50; // Adicionar tempo na prisão após morrer
             }else{
                 if(ghosts_state[i].c.x % 8 == 0 && ghosts_state[i].c.y % 8 == 0){
                     pathfind(&ghosts_state[i], 13 * 8 + 4, 11 * 8);
@@ -492,57 +466,24 @@ void game_logic(){
                 move_ghost(&ghosts_state[i]);
             }
         }else if(ghosts_state[i].status == jailed){
-            if(ghosts_state[i].time > 0){
+            //keep ghost in ghost house
+            if(ghosts_state[i].time != 0){
                 ghosts_state[i].time--;
             }else{
-                if(ghosts_state[i].c.x == 13 * 8 + 4 && ghosts_state[i].c.y == 11 * 8){
-                    ghosts_state[i].status = normal;
-                } else {
-                    if(ghosts_state[i].c.x % 8 == 0 && ghosts_state[i].c.y % 8 == 0){
-                        pathfind(&ghosts_state[i], 13 * 8 + 4, 11 * 8);
-                    }
-                    move_ghost(&ghosts_state[i]);
-                }
+                ghosts_state[i].status = normal;
             }
         }
     }
 
-    // Bug 3: Corrigido - colisão entre Pac-Man e fantasmas
-    for(int i = 0; i < 4; i++) {
-        if(ghosts_state[i].status == normal) {
-            // Verificar colisão entre
+    //check for ghost death
+    //check for pacman death
 
-            if(abs(pacman_c.x - ghosts_state[i].c.x) < 8 && abs(pacman_c.y - ghosts_state[i].c.y) < 8) {
-                if(energized_time > 0) {
-                    ghosts_state[i].status = dead;
-                } else {
-                    // Reset do jogo quando o Pac-Man é pego
-                    pacman_c.x = 13 * 8;
-                    pacman_c.y = 23 * 8;
-                    direction = right;
-                    next_direction_time = 0;
-
-                    ghosts_state[0] = (ghost){ {13 * 8 + 4, 11 * 8}, up, 0, normal};
-                    ghosts_state[1] = (ghost){ {11 * 8 + 4, 14 * 8 + 4}, up, 100, jailed};
-                    ghosts_state[2] = (ghost){ {13 * 8 + 4, 14 * 8 + 4}, up, 200, jailed};
-                    ghosts_state[3] = (ghost){ {15 * 8 + 4, 14 * 8 + 4}, up, 300, jailed};
-
-                    return;
-                }
-            }
-        }
-    }
-
-    // Bug 4: Adicionando condição de vitória
+    //check for win condition
+    if (energized_time != 0) energized_time--;
     if(num_pellets == 0){
-        // Reiniciar jogo ou mostrar tela de vitória
-        reset_game();
+        //win
     }
-
-    if (energized_time > 0) energized_time--;
 }
-
-
 
 void draw(){
     draw_xpm(maze_xpm, maze_x, maze_y);
@@ -576,13 +517,13 @@ int game(){
     next_direction_time = 0;
     ghost_state = 0;
     pacman_state = 0;
-
+    energized_time = 0;
     printf("waiting for ESC key\n");
 
     while(1){
         uint64_t status = await_interrupt(1 << 0 | 1 << 1);
 
-        if (status & 1 << 0) { 
+        if (status & 1 << 0) { /* subscribed interrupt */
             kbc_ih();
             if (verify_status()){
                 switch (scancode){
@@ -607,7 +548,7 @@ int game(){
                 }
             }
         }
-        if (status & 1 << 1) { 
+        if (status & 1 << 1) { /* subscribed interrupt */
             micros++;
             if(micros % 7 == 0){
                 ghost_state = (ghost_state + 1) % 4;
