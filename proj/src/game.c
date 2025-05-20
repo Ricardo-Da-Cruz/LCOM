@@ -476,5 +476,25 @@ int game(){
         }
     }
 
+
     return 0;
 }
+
+void draw_text(const char *text, int x, int y) {
+    for (int i = 0; text[i] != '\0'; i++) {
+        char ch = text[i];
+        if (ch >= 'A' && ch <= 'Z') {
+            draw_xpm(letters_xpm[ch - 'A'], x + i * 8, y);
+        }
+        else if (ch >= 'a' && ch <= 'z') {
+            draw_xpm(letters_xpm[ch - 'a'], x + i * 8, y);
+        }
+        else if (ch >= '0' && ch <= '9') {
+            draw_xpm(numbers_xpm[ch - '0'], x + i * 8, y);
+        }
+        else if (ch == ' ') {
+            // Leave space between words
+        }
+    }
+}
+
