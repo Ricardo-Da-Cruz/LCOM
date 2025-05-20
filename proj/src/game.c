@@ -151,6 +151,12 @@ int loadAssets(){
 int try_move(int direction){
     switch (direction){
         case right:
+        // Verificar teletransporte pelo túnel direito
+            if (pacman_c.x >= 27 * 8) {
+                pacman_c.x = 0;
+                return 1;
+            }
+
             if (maze_matrix[pacman_c.y / 8][(pacman_c.x + 8) / 8] == 0
                 && maze_matrix[(pacman_c.y + 7) / 8][(pacman_c.x + 8) / 8] == 0){
                 pacman_c.x++;
@@ -158,6 +164,12 @@ int try_move(int direction){
             }
             break;
         case left:
+        // Verificar teletransporte pelo túnel esquerdo
+            if (pacman_c.x <= 0) {
+                pacman_c.x = 27 * 8;
+                return 1;
+            }
+
             if (maze_matrix[pacman_c.y / 8][(pacman_c.x - 1) / 8] == 0
                 && maze_matrix[(pacman_c.y + 7) / 8][(pacman_c.x - 1) / 8] == 0){
                 pacman_c.x--;
@@ -474,6 +486,33 @@ void (game_logic)(){
             }
         }
     }
+
+    // colisão entre Pac-Man e fantasmas
+    for(int i = 0; i < 4; i++) {
+        if(ghosts_state[i].status == normal) {
+            // Verificar colisão entre
+
+            if(abs(pacman_c.x - ghosts_state[i].c.x) < 8 && abs(pacman_c.y - ghosts_state[i].c.y) < 8) {
+                if(energized_time > 0) {
+                    ghosts_state[i].status = dead;
+                } else {
+                    // Reset do jogo quando o Pac-Man é pego
+                    pacman_c.x = 13 * 8;
+                    pacman_c.y = 23 * 8;
+                    direction = right;
+                    next_direction_time = 0;
+
+                    ghosts_state[0] = (ghost){ {13 * 8 + 4, 11 * 8}, up, 0, normal};
+                    ghosts_state[1] = (ghost){ {11 * 8 + 4, 14 * 8 + 4}, up, 100, jailed};
+                    ghosts_state[2] = (ghost){ {13 * 8 + 4, 14 * 8 + 4}, up, 200, jailed};
+                    ghosts_state[3] = (ghost){ {15 * 8 + 4, 14 * 8 + 4}, up, 300, jailed};
+
+                    return;
+                }
+            }
+        }
+    }
+
 
     //check for ghost death
     //check for pacman death
