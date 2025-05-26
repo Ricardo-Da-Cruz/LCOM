@@ -404,9 +404,9 @@ void (game_logic)(){
             if(ghosts_state[i].c.x == 13 * 8 + 4 && ghosts_state[i].c.y == 11 * 8){
                 ghosts_state[i].status = jailed;
             }else{
-                if(ghosts_state[i].c.x % 8 == 0 && ghosts_state[i].c.y % 8 == 0){
-                    pathfind(&ghosts_state[i], 13 * 8 + 4, 11 * 8);
-                }
+                pathfind(&ghosts_state[i], 13 * 8 + 4, 11 * 8);
+                move_ghost(&ghosts_state[i]);
+                pathfind(&ghosts_state[i], 13 * 8 + 4, 11 * 8);
                 move_ghost(&ghosts_state[i]);
             }
         }else if(ghosts_state[i].status == jailed){
@@ -433,6 +433,22 @@ void (game_logic)(){
 
     //check for ghost death
     //check for pacman death
+    for(int i = 0; i < 4; i++){
+        if(ghosts_state[i].status == normal){
+            if(distance(ghosts_state[i].c.x, ghosts_state[i].c.y, pacman_c.x, pacman_c.y) < 8 * 8){
+                if (energized_time == 0){
+                    //pacman dies
+                }else{
+                    //ghost dies
+                    ghosts_state[i].status = dead;
+                }
+                
+            }
+        }
+    }
+
+
+
 
     //check for win condition
     if (energized_time != 0) energized_time--;
