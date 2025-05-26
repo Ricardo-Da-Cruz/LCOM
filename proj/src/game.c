@@ -65,11 +65,11 @@ typedef struct{
     int y;
 }coords;
 
-enum ghost_status{
+typedef enum {
     normal,
     jailed, // the ghost is in the ghost house and is not free to move
     dead, // the ghost is dead and has to go back to the ghost house
-};
+}ghost_status;
 
 typedef enum {
     playing,
@@ -82,21 +82,20 @@ typedef struct{
     coords c;
     int direction;
     int time;
-    enum ghost_status status;
+    ghost_status status;
 }ghost;
 
+game_state state;
+
 int current_pellet_matrix[31][28];
+int num_pellets;
 
 uint8_t micros;
-direction_t direction;
+
 int energized_time;
-int num_pellets;
 bool clyde_is_scared = false;
 int ghost_mode;
-game_state state;
-int pacman_lives;
 
-// for input buffering
 int next_direction;
 int next_direction_time;
 
@@ -105,6 +104,8 @@ int maze_y;
 
 ghost ghosts_state[4];
 coords pacman_c;
+direction_t direction;
+int pacman_lives;
 
 int loadAssets(){
     for(int i = 0; i < 4; i++){
@@ -330,40 +331,7 @@ void chase(ghost *g, int idx){
     }
 }
 
-void (game_logic)(){
-    //move pacman
-    //needs input buffering to prevent the need of pixel perfect movement
-    if(next_direction_time != 0){
-        if(try_move(next_direction)){
-            next_direction_time = 0;
-            direction = next_direction;
-        }else{
-            try_move(direction);
-            next_direction_time--;
-        }
-    }else{
-        try_move(direction);
-    }
-
-    //check for pellet pickup and energizer pickup
-    if(current_pellet_matrix[pacman_c.y / 8][pacman_c.x / 8] == 1){
-        num_pellets--;
-        //remove pellet from maze xpm
-        vg_draw_rectangle_xpm(pacman_c.x - pacman_c.x % 8, pacman_c.y - pacman_c.y % 8, 8, 8, 0, maze_xpm);
-    }else if(current_pellet_matrix[pacman_c.y / 8][pacman_c.x / 8] == 2){
-        num_pellets--;
-        //remove pellet from maze xpm
-        vg_draw_rectangle_xpm(pacman_c.x - pacman_c.x % 8 , pacman_c.y - pacman_c.y % 8, 16, 16, 0, maze_xpm);
-        for(int i = 0; i < 4; i++){
-            if(ghosts_state[i].direction == right) ghosts_state[i].direction = left;
-            else if(ghosts_state[i].direction == left) ghosts_state[i].direction = right;
-            else if(ghosts_state[i].direction == up) ghosts_state[i].direction = down;
-            else if(ghosts_state[i].direction == down) ghosts_state[i].direction = up;
-        }
-        energized_time = 200;
-    }
-    current_pellet_matrix[pacman_c.y / 8][pacman_c.x / 8] = 0;
-
+void (update_ghost)(){
     //ghosts have two modes scatter and chase
     //in scatter mode they move to a predefined position
     //pathfind doesn't need to be optimal, just minimize the linear distance to the target
@@ -430,15 +398,24 @@ void (game_logic)(){
             }
         }
     }
+}
 
-    //check for win condition
-    if (energized_time != 0) energized_time--;
-    if(num_pellets == 0){
-        state = won;
+void (update_pacman)(){
+    //needs input buffering to prevent the need of pixel perfect movement
+    if(next_direction_time != 0){
+        if(try_move(next_direction)){
+            next_direction_time = 0;
+            direction = next_direction;
+        }else{
+            try_move(direction);
+            next_direction_time--;
+        }
+    }else{
+        try_move(direction);
     }
+}
 
-    //check for ghost death
-    //check for pacman death
+void (check_collisions)(){
     for(int i = 0; i < 4; i++){
         if(ghosts_state[i].status == normal){
             if(distance(ghosts_state[i].c.x, ghosts_state[i].c.y, pacman_c.x, pacman_c.y) < 8 * 8){
@@ -453,6 +430,46 @@ void (game_logic)(){
             }
         }
     }
+}
+
+void (check_pellets)(){
+    if (energized_time != 0) energized_time--;
+
+    if(current_pellet_matrix[pacman_c.y / 8][pacman_c.x / 8] == 1){
+        num_pellets--;
+        //remove pellet from maze xpm
+        vg_draw_rectangle_xpm(pacman_c.x - pacman_c.x % 8, pacman_c.y - pacman_c.y % 8, 8, 8, 0, maze_xpm);
+    }else if(current_pellet_matrix[pacman_c.y / 8][pacman_c.x / 8] == 2){
+        num_pellets--;
+        energized_time = 200;
+        //remove pellet from maze xpm
+        vg_draw_rectangle_xpm(pacman_c.x - pacman_c.x % 8 , pacman_c.y - pacman_c.y % 8, 16, 16, 0, maze_xpm);
+
+        for(int i = 0; i < 4; i++){
+            if(ghosts_state[i].direction == right) ghosts_state[i].direction = left;
+            else if(ghosts_state[i].direction == left) ghosts_state[i].direction = right;
+            else if(ghosts_state[i].direction == up) ghosts_state[i].direction = down;
+            else if(ghosts_state[i].direction == down) ghosts_state[i].direction = up;
+        }
+    }
+    
+    current_pellet_matrix[pacman_c.y / 8][pacman_c.x / 8] = 0;
+}
+
+void (game_logic)(){
+    if (micros % 2 == 0)
+        update_pacman();
+
+    if (micros % 3 == 0)
+        update_ghost();
+
+    check_pellets();
+    
+    check_collisions();
+    
+    if(num_pellets == 0)
+        state = won;
+
 }
 
 void draw_ui(){
@@ -548,8 +565,7 @@ int game(){
         }
         if (status & 1 << 1) { /* subscribed interrupt */
             micros++;
-            if(micros % 2 == 0){
-                draw_ui();
+            draw_ui();
                 switch (state){
                     case playing:
                         game_logic();
@@ -563,6 +579,7 @@ int game(){
                         micros = 0;
                         next_direction_time = 0;
                         energized_time = 0;
+                        ghost_mode = 0;
                         state = playing;
                         
                         pacman_c = (coords) {13 * 8, 23 * 8};
@@ -583,7 +600,6 @@ int game(){
                     printf("refresh_screen failed\n");
                     return 4;
                 }
-            }
         }
     }
 
