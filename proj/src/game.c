@@ -87,6 +87,8 @@ int anim_state2;
 int energized_time;
 int num_pellets;
 bool clyde_is_scared = false;
+int num_seconds;
+int ghost_mode;
 
 // for input buffering
 int next_direction;
@@ -292,7 +294,6 @@ void chase(ghost *g, int idx){
     coords target = {0,0};
     int x = 14 * 8;
     int y = 11 * 8;
-    vg_draw_rectangle_xpm(x, y, 8, 8, 0xFFFFFF, maze_xpm);
     switch (idx){
         case blinky_idx:
             //Blinky wants to move to pacman
@@ -376,12 +377,22 @@ void (game_logic)(){
         | 3       | 5 seconds        | 20 seconds                       |
         | 4       | 5 seconds        | until Pac-Man dies or level ends |
     */
+
+    if(num_seconds == 7) ghost_mode = 1;
+    else if(num_seconds == 27) ghost_mode = 0;
+    else if(num_seconds == 34) ghost_mode = 1;
+    else if(num_seconds == 54) ghost_mode = 0;
+    else if(num_seconds == 59) ghost_mode = 1;
+
     for(int i = 0; i < 4; i++){
         if(ghosts_state[i].status == normal){
             //ghost pathfinding
             //move ghost
             if (energized_time == 0){
-                chase(&ghosts_state[i], i);
+                if (ghost_mode == 0) 
+                    scatter(&ghosts_state[i], i);
+                else 
+                    chase(&ghosts_state[i], i);
                 move_ghost(&ghosts_state[i]);
             }else{
                 //move ghost away from pacman
@@ -464,6 +475,10 @@ int game(){
     direction = 0;
     next_direction_time = 0;
     anim_state = 0;
+    anim_state2 = 0;
+    energized_time = 0;
+    num_seconds = 0;
+    ghost_mode = 0;
 
     printf("waiting for ESC key\n");
 
@@ -500,6 +515,9 @@ int game(){
             if (micros % 7 == 0){
                     anim_state = (anim_state + 1) % 2;
                     anim_state2 = (anim_state2 + 1) % 4;
+            }
+            if (micros % 60 == 0){
+                num_seconds++;
             }
 
             if(micros % 3 == 0){
