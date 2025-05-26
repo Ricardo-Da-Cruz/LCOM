@@ -71,6 +71,13 @@ enum ghost_status{
     dead, // the ghost is dead and has to go back to the ghost house
 };
 
+typedef enum {
+    playing,
+    lost,
+    respawn,
+    won,
+}game_state;
+
 typedef struct{
     coords c;
     int direction;
@@ -89,6 +96,8 @@ int num_pellets;
 bool clyde_is_scared = false;
 int num_seconds;
 int ghost_mode;
+game_state state;
+int pacman_lives;
 
 // for input buffering
 int next_direction;
@@ -97,14 +106,8 @@ int next_direction_time;
 int maze_x;
 int maze_y;
 
-ghost ghosts_state[4] = {
-    { {13 * 8 + 4, 11 * 8},    left, 0, normal},
-    { {11 * 8 + 4, 14 * 8 + 4},up, 10, jailed},
-    { {13 * 8 + 4, 14 * 8 + 4},up, 100, jailed},
-    { {15 * 8 + 4, 14 * 8 + 4},up, 300, jailed},
-};
-
-coords pacman_c = {13 * 8, 23 * 8};
+ghost ghosts_state[4];
+coords pacman_c;
 
 int loadAssets(){
     for(int i = 0; i < 4; i++){
@@ -214,6 +217,8 @@ void move_ghost(ghost *g){
     }
 }
 
+
+//distance is squared because i don't want to use sqrt
 int distance(int x1, int y1, int x2, int y2){
     return (x1 - x2) * (x1 - x2) + (y1 - y2) * (y1 - y2);
 }
@@ -431,15 +436,22 @@ void (game_logic)(){
         }
     }
 
+    //check for win condition
+    if (energized_time != 0) energized_time--;
+    if(num_pellets == 0){
+        state = won;
+    }
+
     //check for ghost death
     //check for pacman death
     for(int i = 0; i < 4; i++){
         if(ghosts_state[i].status == normal){
             if(distance(ghosts_state[i].c.x, ghosts_state[i].c.y, pacman_c.x, pacman_c.y) < 8 * 8){
                 if (energized_time == 0){
-                    //pacman dies
+                    state = lost;
+                    pacman_lives--;
+                    micros = 0;
                 }else{
-                    //ghost dies
                     ghosts_state[i].status = dead;
                 }
                 
@@ -447,17 +459,9 @@ void (game_logic)(){
         }
     }
 
-
-
-
-    //check for win condition
-    if (energized_time != 0) energized_time--;
-    if(num_pellets == 0){
-        //win
-    }
 }
 
-void draw(){
+void draw_game(){
     draw_xpm(maze_xpm, maze_x, maze_y);
     draw_xpm(pacman_xpm[direction * 2 + anim_state], maze_x + pacman_c.x, maze_y + pacman_c.y);
 
@@ -479,6 +483,17 @@ void draw(){
     }
 }
 
+void draw_respawn(){
+    draw_xpm(maze_xpm, maze_x, maze_y);
+    
+    if(micros / 6 < 12){
+        draw_xpm(death_anim_xpm[micros / 6], maze_x + pacman_c.x, maze_y + pacman_c.y);
+
+    }else{
+        state = respawn;
+    }
+}
+
 int game(){
     printf("loading assets\n");
 
@@ -495,6 +510,14 @@ int game(){
     energized_time = 0;
     num_seconds = 0;
     ghost_mode = 0;
+    pacman_lives = 3;
+    state = playing;
+
+    pacman_c = (coords) {13 * 8, 23 * 8};
+    ghosts_state[blinky_idx] = (ghost) { {13 * 8 + 4, 11 * 8},    left, 0, normal};
+    ghosts_state[clyde_idx] =  (ghost) { {11 * 8 + 4, 14 * 8 + 4},up, 120, jailed};
+    ghosts_state[inky_idx] =   (ghost) { {13 * 8 + 4, 14 * 8 + 4},up, 60, jailed};
+    ghosts_state[pinky_idx] =  (ghost) { {15 * 8 + 4, 14 * 8 + 4},up, 180, jailed};
 
     printf("waiting for ESC key\n");
 
@@ -537,9 +560,37 @@ int game(){
             }
 
             if(micros % 3 == 0){
-                game_logic();
+                switch (state){
+                    case playing:
+                        game_logic();
+                        draw_game();
+                        break;
+                    case lost:
+                        if(pacman_lives == 0) return 7;
+                        else draw_respawn();
+                        break;
+                    case respawn:
+                        micros = 0;
+                        direction = 0;
+                        next_direction_time = 0;
+                        anim_state = 0;
+                        anim_state2 = 0;
+                        energized_time = 0;
+                        state = playing;
+                        pacman_c = (coords) {13 * 8, 23 * 8};
 
-                draw();
+                        //reset ghosts
+                        ghosts_state[blinky_idx] = (ghost) { {13 * 8 + 4, 11 * 8},    left, 0, normal};
+                        ghosts_state[clyde_idx] = (ghost) { {11 * 8 + 4, 14 * 8 + 4},up, 60, jailed};
+                        ghosts_state[inky_idx] = (ghost) { {13 * 8 + 4, 14 * 8 + 4},up, 120, jailed};
+                        ghosts_state[pinky_idx] = (ghost) { {15 * 8 + 4, 14 * 8 + 4},up, 180, jailed};
+
+                        break;
+                    case won:
+                        return 7;
+                        break;
+                }
+                
                 
                 if(refresh_screen()){
                     printf("refresh_screen failed\n");
