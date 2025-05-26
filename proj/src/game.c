@@ -89,12 +89,9 @@ int current_pellet_matrix[31][28];
 
 uint8_t micros;
 direction_t direction;
-int anim_state;
-int anim_state2;
 int energized_time;
 int num_pellets;
 bool clyde_is_scared = false;
-int num_seconds;
 int ghost_mode;
 game_state state;
 int pacman_lives;
@@ -381,11 +378,11 @@ void (game_logic)(){
         | 4       | 5 seconds        | until Pac-Man dies or level ends |
     */
 
-    if(num_seconds == 7) ghost_mode = 1;
-    else if(num_seconds == 27) ghost_mode = 0;
-    else if(num_seconds == 34) ghost_mode = 1;
-    else if(num_seconds == 54) ghost_mode = 0;
-    else if(num_seconds == 59) ghost_mode = 1;
+    if(micros / 60 == 7) ghost_mode = 1;
+    else if(micros / 60 == 27) ghost_mode = 0;
+    else if(micros / 60 == 34) ghost_mode = 1;
+    else if(micros / 60 == 54) ghost_mode = 0;
+    else if(micros / 60 == 59) ghost_mode = 1;
 
     for(int i = 0; i < 4; i++){
         if(ghosts_state[i].status == normal){
@@ -458,26 +455,8 @@ void (game_logic)(){
     }
 }
 
-void draw_game(){
+void draw_ui(){
     draw_xpm(maze_xpm, maze_x, maze_y);
-    draw_xpm(pacman_xpm[direction * 2 + anim_state], maze_x + pacman_c.x, maze_y + pacman_c.y);
-
-    for(int i = 0; i < 4; i++){
-        if(ghosts_state[i].status == normal){
-            if (energized_time != 0){
-                if (energized_time < 50)
-                    draw_xpm(energized_ghost_xpm[anim_state2], maze_x + ghosts_state[i].c.x, maze_y + ghosts_state[i].c.y);
-                else
-                    draw_xpm(energized_ghost_xpm[anim_state], maze_x + ghosts_state[i].c.x, maze_y + ghosts_state[i].c.y);
-            }else{
-                draw_xpm(normal_ghost_xpm[i][anim_state + 2 *ghosts_state[i].direction], maze_x + ghosts_state[i].c.x, maze_y + ghosts_state[i].c.y);
-            }
-        }else if(ghosts_state[i].status == dead){
-            draw_xpm(eyes_xpm[anim_state], maze_x + ghosts_state[i].c.x, maze_y + ghosts_state[i].c.y);
-        } else if(ghosts_state[i].status == jailed){
-            draw_xpm(normal_ghost_xpm[i][anim_state], maze_x + ghosts_state[i].c.x, maze_y + ghosts_state[i].c.y);
-        }
-    }
 
     draw_text("LIVES", 100, 100, 0xFFFFFF);
     for(int i = 0; i < pacman_lives; i++){
@@ -485,18 +464,34 @@ void draw_game(){
     }
 }
 
-void draw_respawn(){
-    draw_xpm(maze_xpm, maze_x, maze_y);
+void draw_game(){
+    draw_xpm(pacman_xpm[direction * 2 + micros / 8 % 2], maze_x + pacman_c.x, maze_y + pacman_c.y);
+
+    for(int i = 0; i < 4; i++){
+        if(ghosts_state[i].status == normal){
+            if (energized_time != 0){
+                if (energized_time < 50)
+                    draw_xpm(energized_ghost_xpm[micros / 8 % 4], maze_x + ghosts_state[i].c.x, maze_y + ghosts_state[i].c.y);
+                else
+                    draw_xpm(energized_ghost_xpm[micros / 8 % 2], maze_x + ghosts_state[i].c.x, maze_y + ghosts_state[i].c.y);
+            }else{
+                draw_xpm(normal_ghost_xpm[i][micros / 8 % 2 + 2 *ghosts_state[i].direction], maze_x + ghosts_state[i].c.x, maze_y + ghosts_state[i].c.y);
+            }
+        }else if(ghosts_state[i].status == dead){
+            draw_xpm(eyes_xpm[ghosts_state[i].direction], maze_x + ghosts_state[i].c.x, maze_y + ghosts_state[i].c.y);
+        } else if(ghosts_state[i].status == jailed){
+            draw_xpm(normal_ghost_xpm[i][micros / 8 % 2], maze_x + ghosts_state[i].c.x, maze_y + ghosts_state[i].c.y);
+        }
+    }
+
     
+}
+
+void draw_respawn(){
     if(micros / 6 < 12) 
         draw_xpm(death_anim_xpm[micros / 6], maze_x + pacman_c.x, maze_y + pacman_c.y);
     else
         state = respawn;
-
-    draw_text("LIVES", 100, 100, 0xFFFFFF);
-    for(int i = 0; i < pacman_lives; i++){
-        draw_xpm(death_anim_xpm[0], 100 + i * 16, 110);
-    }
 }
 
 int game(){
@@ -506,15 +501,11 @@ int game(){
 
     maze_x = vmi.XResolution / 2 - maze_xpm.width / 2;
     maze_y = vmi.YResolution / 2 - maze_xpm.height / 2;
-    
+
     num_pellets = pellet_count;
     micros = 0;
-    direction = 0;
     next_direction_time = 0;
-    anim_state = 0;
-    anim_state2 = 0;
     energized_time = 0;
-    num_seconds = 0;
     ghost_mode = 0;
     pacman_lives = 3;
     state = playing;
@@ -557,15 +548,8 @@ int game(){
         }
         if (status & 1 << 1) { /* subscribed interrupt */
             micros++;
-            if (micros % 7 == 0){
-                    anim_state = (anim_state + 1) % 2;
-                    anim_state2 = (anim_state2 + 1) % 4;
-            }
-            if (micros % 60 == 0){
-                num_seconds++;
-            }
-
-            if(micros % 3 == 0){
+            if(micros % 2 == 0){
+                draw_ui();
                 switch (state){
                     case playing:
                         game_logic();
@@ -577,12 +561,10 @@ int game(){
                         break;
                     case respawn:
                         micros = 0;
-                        direction = 0;
                         next_direction_time = 0;
-                        anim_state = 0;
-                        anim_state2 = 0;
                         energized_time = 0;
                         state = playing;
+                        
                         pacman_c = (coords) {13 * 8, 23 * 8};
 
                         //reset ghosts
@@ -597,13 +579,11 @@ int game(){
                         break;
                 }
                 
-                
                 if(refresh_screen()){
                     printf("refresh_screen failed\n");
                     return 4;
                 }
             }
-            
         }
     }
 
