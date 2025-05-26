@@ -83,6 +83,7 @@ int current_pellet_matrix[31][28];
 uint8_t micros;
 direction_t direction;
 int anim_state;
+int anim_state2;
 int energized_time;
 int num_pellets;
 bool clyde_is_scared = false;
@@ -196,9 +197,11 @@ void move_ghost(ghost *g){
     switch (g->direction){
         case right:
             g->c.x++;
+            if (g->c.x >= 27 * 8) g->c.x = 0;
             break;
         case left:
             g->c.x--;
+            if (g->c.x < 0) g->c.x = 27 * 8;
             break;
         case up:
             g->c.y--;
@@ -269,7 +272,6 @@ void scatter(ghost *g, int idx){
         case blinky_idx:
             //top right corner
             pathfind(g, 27 * 8 + 4, 4);
-
             break;
         case clyde_idx:
             //bottom left corner
@@ -350,7 +352,13 @@ void (game_logic)(){
     }else if(current_pellet_matrix[pacman_c.y / 8][pacman_c.x / 8] == 2){
         num_pellets--;
         //remove pellet from maze xpm
-        vg_draw_rectangle_xpm(pacman_c.x - pacman_c.x % 8 , pacman_c.y - pacman_c.y % 8, 8, 8, 0xFFFFFF, maze_xpm);
+        vg_draw_rectangle_xpm(pacman_c.x - pacman_c.x % 8 , pacman_c.y - pacman_c.y % 8, 16, 16, 0, maze_xpm);
+        for(int i = 0; i < 4; i++){
+            if(ghosts_state[i].direction == right) ghosts_state[i].direction = left;
+            else if(ghosts_state[i].direction == left) ghosts_state[i].direction = right;
+            else if(ghosts_state[i].direction == up) ghosts_state[i].direction = down;
+            else if(ghosts_state[i].direction == down) ghosts_state[i].direction = up;
+        }
         energized_time = 200;
     }
     current_pellet_matrix[pacman_c.y / 8][pacman_c.x / 8] = 0;
@@ -377,6 +385,8 @@ void (game_logic)(){
                 move_ghost(&ghosts_state[i]);
             }else{
                 //move ghost away from pacman
+                scatter(&ghosts_state[i], i);
+                move_ghost(&ghosts_state[i]);
             }
         }else if(ghosts_state[i].status == dead){
             //move ghost to ghost house
@@ -427,7 +437,10 @@ void draw(){
     for(int i = 0; i < 4; i++){
         if(ghosts_state[i].status == normal){
             if (energized_time != 0){
-                draw_xpm(energized_ghost_xpm[anim_state], maze_x + ghosts_state[i].c.x, maze_y + ghosts_state[i].c.y);
+                if (energized_time < 50)
+                    draw_xpm(energized_ghost_xpm[anim_state2], maze_x + ghosts_state[i].c.x, maze_y + ghosts_state[i].c.y);
+                else
+                    draw_xpm(energized_ghost_xpm[anim_state], maze_x + ghosts_state[i].c.x, maze_y + ghosts_state[i].c.y);
             }else{
                 draw_xpm(normal_ghost_xpm[i][anim_state + 2 *ghosts_state[i].direction], maze_x + ghosts_state[i].c.x, maze_y + ghosts_state[i].c.y);
             }
@@ -486,6 +499,7 @@ int game(){
             micros++;
             if (micros % 7 == 0){
                     anim_state = (anim_state + 1) % 2;
+                    anim_state2 = (anim_state2 + 1) % 4;
             }
 
             if(micros % 3 == 0){
