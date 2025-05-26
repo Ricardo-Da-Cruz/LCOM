@@ -217,7 +217,6 @@ void move_ghost(ghost *g){
     }
 }
 
-
 //distance is squared because i don't want to use sqrt
 int distance(int x1, int y1, int x2, int y2){
     return (x1 - x2) * (x1 - x2) + (y1 - y2) * (y1 - y2);
@@ -336,7 +335,6 @@ void chase(ghost *g, int idx){
 
 void (game_logic)(){
     //move pacman
-    //check for collisions
     //needs input buffering to prevent the need of pixel perfect movement
     if(next_direction_time != 0){
         if(try_move(next_direction)){
@@ -458,7 +456,6 @@ void (game_logic)(){
             }
         }
     }
-
 }
 
 void draw_game(){
@@ -481,16 +478,24 @@ void draw_game(){
             draw_xpm(normal_ghost_xpm[i][anim_state], maze_x + ghosts_state[i].c.x, maze_y + ghosts_state[i].c.y);
         }
     }
+
+    draw_text("LIVES", 100, 100, 0xFFFFFF);
+    for(int i = 0; i < pacman_lives; i++){
+        draw_xpm(death_anim_xpm[0], 100 + i * 16, 110);
+    }
 }
 
 void draw_respawn(){
     draw_xpm(maze_xpm, maze_x, maze_y);
     
-    if(micros / 6 < 12){
+    if(micros / 6 < 12) 
         draw_xpm(death_anim_xpm[micros / 6], maze_x + pacman_c.x, maze_y + pacman_c.y);
-
-    }else{
+    else
         state = respawn;
+
+    draw_text("LIVES", 100, 100, 0xFFFFFF);
+    for(int i = 0; i < pacman_lives; i++){
+        draw_xpm(death_anim_xpm[0], 100 + i * 16, 110);
     }
 }
 
@@ -501,6 +506,7 @@ int game(){
 
     maze_x = vmi.XResolution / 2 - maze_xpm.width / 2;
     maze_y = vmi.YResolution / 2 - maze_xpm.height / 2;
+    
     num_pellets = pellet_count;
     micros = 0;
     direction = 0;
@@ -514,7 +520,7 @@ int game(){
     state = playing;
 
     pacman_c = (coords) {13 * 8, 23 * 8};
-    ghosts_state[blinky_idx] = (ghost) { {13 * 8 + 4, 11 * 8},    left, 0, normal};
+    ghosts_state[blinky_idx] = (ghost) { {13 * 8 + 4, 11 * 8},  left, 0, normal};
     ghosts_state[clyde_idx] =  (ghost) { {11 * 8 + 4, 14 * 8 + 4},up, 120, jailed};
     ghosts_state[inky_idx] =   (ghost) { {13 * 8 + 4, 14 * 8 + 4},up, 60, jailed};
     ghosts_state[pinky_idx] =  (ghost) { {15 * 8 + 4, 14 * 8 + 4},up, 180, jailed};
@@ -580,10 +586,10 @@ int game(){
                         pacman_c = (coords) {13 * 8, 23 * 8};
 
                         //reset ghosts
-                        ghosts_state[blinky_idx] = (ghost) { {13 * 8 + 4, 11 * 8},    left, 0, normal};
-                        ghosts_state[clyde_idx] = (ghost) { {11 * 8 + 4, 14 * 8 + 4},up, 60, jailed};
-                        ghosts_state[inky_idx] = (ghost) { {13 * 8 + 4, 14 * 8 + 4},up, 120, jailed};
-                        ghosts_state[pinky_idx] = (ghost) { {15 * 8 + 4, 14 * 8 + 4},up, 180, jailed};
+                        ghosts_state[blinky_idx] = (ghost) { {13 * 8 + 4, 11 * 8},  left, 0, normal};
+                        ghosts_state[clyde_idx] =  (ghost) { {11 * 8 + 4, 14 * 8 + 4},up, 60, jailed};
+                        ghosts_state[inky_idx] =   (ghost) { {13 * 8 + 4, 14 * 8 + 4},up, 120, jailed};
+                        ghosts_state[pinky_idx] =  (ghost) { {15 * 8 + 4, 14 * 8 + 4},up, 180, jailed};
 
                         break;
                     case won:
