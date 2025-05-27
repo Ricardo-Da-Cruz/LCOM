@@ -454,7 +454,7 @@ int game(){
                         next_direction_time = 4;
                         break;
                     case ESC_MAKE_CODE:
-                        return 7;
+                        return 0;
                 }
             }
         }

@@ -8,6 +8,8 @@
 #include "devices/gpu.h"
 #include "devices/i8042.h"
 
+
+#include "menu.h"
 #include "game.h"
 
 typedef enum {
@@ -16,10 +18,17 @@ typedef enum {
     LOST,
     WON,
     EXIT,
+    SCORE,
 }game_state;
 
 uint8_t kbd_arq_set = 0;
 uint8_t timer_arq_set = 1;
+
+static game_state menu_return_state = MENU;// menu handling
+
+void start_game(void);
+void score_board(void);
+void exit_game(void);
 
 int main(int argc, char *argv[]) {
     // sets the language of LCF messages (can be either EN-US or PT-PT)
@@ -66,61 +75,23 @@ int (proj_end)(){
     return 0;
 }
 
+
 int (proj_menu)(){
-    vg_draw_rectangle(vmi.XResolution / 2 - 75, vmi.YResolution / 2, 150, 25, 0xFF0000);
-    vg_draw_rectangle(vmi.XResolution / 2 - 75, vmi.YResolution / 2 + 40, 150, 25, 0xFFFFFF);
+    Menu *m = newMenu("Main Menu");
+    menuAddFunction(m, "Start Game", start_game); 
+    menuAddFunction(m, "Score Board", score_board); 
+    menuAddFunction(m, "Exit", exit_game);       
 
-    if(refresh_screen()){
-        return 4;
-    }
+    menu_return_state = MENU;
 
-    int ipc_status;
-    message msg;
-    int r;
-    int selected = 0;
+    // This handles drawing + input + selection
+    menuPost(m);
 
-    printf("waiting for ESC key\n");
+    menuDelete(m);
 
-    while(1) {
-        if ( (r = driver_receive(ANY, &msg, &ipc_status)) != 0) { 
-            printf("driver_receive failed with: %d", r);
-            continue;
-        }
-
-          scancode = 0;
-      
-          if (is_ipc_notify(ipc_status)) { /* received notification */
-            switch (_ENDPOINT_P(msg.m_source)) {
-                case HARDWARE: /* hardware interrupt notification */				
-                    if (msg.m_notify.interrupts & kbd_arq_set) { /* subscribed interrupt */
-                        kbc_ih();
-                        if (verify_status()){
-                            if(scancode == ESC_MAKE_CODE) return EXIT;
-                            if(scancode == W_MAKE_CODE || scancode == S_MAKE_CODE){
-                                selected = (selected + 1) % 2;
-                            }
-                            if(scancode == ENTER_MAKE_CODE){
-                                return selected == 0 ? PLAYING : EXIT;
-                            }
-                            vg_draw_rectangle(vmi.XResolution / 2 - 75, vmi.YResolution / 2, 150, 25, selected == 0 ? 0xFF0000 : 0xFFFFFF);
-                            vg_draw_rectangle(vmi.XResolution / 2 - 75, vmi.YResolution / 2 + 40, 150, 25, selected == 0 ? 0xFFFFFF : 0xFF0000);
-                            printf("scancode: %02x\n", scancode);
-                        }
-                        if(refresh_screen()){
-                            printf("refresh_screen failed\n");
-                            return 4;
-                        }
-                    }
-                    break;
-                default:
-                    break; /* no other notifications expected: do nothing */	
-            }
-        }
-        
-    }
-
-    return EXIT;
+    return menu_return_state;
 }
+
 
 int (proj_play)(){
     return 0;
@@ -144,6 +115,10 @@ int(proj_main_loop)(int argc, char* argv[]) {
                 state = game();
                 break;
             case EXIT:
+                state = proj_menu();
+                break;
+            case SCORE:
+                state = proj_menu();
                 break;
             default:
                 printf("invalid state\n");
@@ -158,3 +133,18 @@ int(proj_main_loop)(int argc, char* argv[]) {
 
     return 0;
 } 
+
+// menue functions
+void start_game() {
+    menu_return_state = PLAYING;
+}
+
+void score_board() {
+    printf("Showing scoreboard (TODO: implement)\n");
+    tickdelay(micros_to_ticks(1000000)); // 1 second pause
+}
+
+void exit_game() {
+    menu_return_state = EXIT;
+}
+

@@ -179,3 +179,33 @@ int (draw_xpm)(xpm_image_t xpm, uint16_t x, uint16_t y){
     
     return 0;
 }
+
+int (draw_xpm_colored)(xpm_image_t xpm, uint16_t x, uint16_t y, uint32_t color) {
+    int num_bytes = ((vmi.BitsPerPixel + 7) / 8);
+    uint8_t *coord = ((uint8_t*)video_mem) + (y * vmi.XResolution + x) * num_bytes;
+
+    uint8_t red = (color >> 16) & 0xFF;
+    uint8_t green = (color >> 8) & 0xFF;
+    uint8_t blue = color & 0xFF;
+
+    int a = 0;
+    for (int i=0; i < xpm.height; i++) {
+        for (int j=0; j < xpm.width; j++) {
+            if (xpm.bytes[a] == 0x40 && xpm.bytes[a + 1] == 0xb1 && xpm.bytes[a + 2] == 0x00) {
+                a += num_bytes;
+                coord += num_bytes;
+                continue;
+            }
+
+            coord[0] = red;
+            coord[1] = green;
+            coord[2] = blue;
+
+            a += num_bytes;
+            coord += num_bytes;
+        }
+        coord += (vmi.XResolution - xpm.width) * num_bytes;
+    }
+
+    return 0;
+}
