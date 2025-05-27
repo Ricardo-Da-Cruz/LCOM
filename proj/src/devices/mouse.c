@@ -11,19 +11,12 @@ uint8_t mouse_scancode;
 int (mouse_subscribe_int)(uint8_t *bit_no) {
     mouse_hook_id = *bit_no; // Salva o hook_id original
     if (sys_irqsetpolicy(MOUSE_IRQ, IRQ_REENABLE | IRQ_EXCLUSIVE, &mouse_hook_id)) return 1;
-    *bit_no = BIT(mouse_hook_id); // dDevolve o bit mask
+    *bit_no = BIT(mouse_hook_id); // Devolve o bit mask
     return 0;
 }
 
 int (mouse_unsubscribe_int)() {
     return sys_irqrmpolicy(&mouse_hook_id);
-}
-
-void (mouse_ih)(){
-    if (util_sys_inb(KBC_ST_REG, &mouse_status)) return;
-    if ((mouse_status & KBC_OBF) && (mouse_status & KBC_AUX)) {
-        util_sys_inb(KBC_OUT_BUF, &mouse_scancode);
-    }
 }
 
 int (avoid_ibf)() {
@@ -42,6 +35,7 @@ int (avoid_ibf)() {
 
     return 1;
 }
+
 
 int (write_mouse_cmd)(uint8_t cmd) {
     int tries = 10;
@@ -64,6 +58,37 @@ int (write_mouse_cmd)(uint8_t cmd) {
 
     return 1;
 }
+
+int (mouse_disable_data_reporting)() {
+    if (write_mouse_cmd(MOUSE_DISABLE_DATA_REPORTING)) return 1;
+
+
+    uint8_t response;
+    if (util_sys_inb(KBC_OUT_BUF, &response)) return 1;
+    if (response != MOUSE_ACK) return 1;
+
+    return 0;
+}
+
+
+int (my_mouse_enable_data_reporting)() {
+    if (write_mouse_cmd(MOUSE_ENABLE_DATA_REPORTING)) return 1;
+
+
+    uint8_t response;
+    if (util_sys_inb(KBC_OUT_BUF, &response)) return 1;
+    if (response != MOUSE_ACK) return 1;
+
+    return 0;
+}
+
+void (mouse_ih)(){
+    util_sys_inb(KBC_ST_REG, &mouse_status);
+    util_sys_inb(KBC_OUT_BUF,&mouse_scancode);
+}
+
+
+
 
 int construct_packet(struct packet *packet, int p, uint8_t scancode) {
     packet->bytes[p] = mouse_scancode;

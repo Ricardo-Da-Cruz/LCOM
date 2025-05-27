@@ -32,4 +32,30 @@
 
 #define ENTER_MAKE_CODE 0x1C
 
+
+#define MOUSE_Y_OV 1 << 7
+#define MOUSE_X_OV 1 << 6
+#define MOUSE_MLB 1 << 0
+#define MOUSE_Y_MSB 1 << 5
+#define MOUSE_X_MSB 1 << 4
+#define MOUSE_FIRST_BYTE_BIT 1 << 3
+#define MOUSE_MIDDLE_BUTTON 1 << 2
+#define MOUSE_RIGHT_BUTTON 1 << 1
+#define MOUSE_LEFT_BUTTON 1 << 0
+
+#define MOUSE_ACK 0xFA
+#define MOUSE_NACK 0xFE
+#define MOUSE_ERROR 0xFC
+
+#define MOUSE_ENABLE_DATA_REPORTING 0xF4
+#define MOUSE_DISABLE_DATA_REPORTING 0xF5
+
+#define KBC_WRITE_TO_MOUSE 0xD4
+
+#define MOUSE_IRQ 12
+
+
+
+
+
 #endif /* _LCOM_I8254_H */
