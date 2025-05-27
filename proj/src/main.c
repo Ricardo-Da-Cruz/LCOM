@@ -92,8 +92,8 @@ int (proj_menu)(){
 
         draw_text("PACKMAN", vmi.XResolution / 2 - 30, vmi.YResolution / 2 - 30, 0xFFFF0);
 
-        draw_text("PLAY", vmi.XResolution / 2 - 20, vmi.YResolution / 2 + 6, 0xFFFFF);
-        draw_text("EXIT", vmi.XResolution / 2 - 20, vmi.YResolution / 2 + 46, 0x00000);
+        draw_text("PLAY (ENTER)", vmi.XResolution / 2 - 40, vmi.YResolution / 2 + 6, 0xFFFFF);
+        draw_text("EXIT (ESC)", vmi.XResolution / 2 - 40, vmi.YResolution / 2 + 46, 0x00000);
 
         if (refresh_screen()) {
             printf("refresh_screen failed\n");
