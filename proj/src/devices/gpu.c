@@ -209,3 +209,5 @@ int (draw_xpm_colored)(xpm_image_t xpm, uint16_t x, uint16_t y, uint32_t color) 
 
     return 0;
 }
+
+

@@ -64,6 +64,10 @@ int (proj_init)(){
     printf("setting graphics mode\n");
     if(set_graphics_mode(0x115)) return 1;
 
+    printf("loading assets for menu...\n");
+    if(loadAssets()) return 1;  
+
+
     return 0;
 }
 

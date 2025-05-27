@@ -32,7 +32,7 @@ xpm_image_t eyes_xpm[8];
 xpm_image_t normal_ghost_xpm[4][8];
 
 xpm_image_t maze_xpm;
-xpm_image_t letters_xpm[26];
+xpm_image_t letters_xpm[28];
 xpm_image_t numbers_xpm[10];
 
 enum ghost_indexes {
@@ -122,7 +122,7 @@ int loadAssets(){
         xpm_load(death_anim[i], XPM_8_8_8, &death_anim_xpm[i]);
     }
     
-    for(int i = 0; i < 26; i++){
+    for(int i = 0; i < 28; i++){
         xpm_load(letters[i], XPM_8_8_8, &letters_xpm[i]);
     }
 
@@ -476,5 +476,29 @@ int game(){
         }
     }
 
+
     return 0;
 }
+
+void draw_text(const char *text, int x, int y, uint32_t color) {
+    for (int i = 0; text[i] != '\0'; i++) {
+        char ch = text[i];
+        if (ch >= 'A' && ch <= 'Z') {
+            draw_xpm_colored(letters_xpm[ch - 'A'], x + i * 8, y, color);
+        }
+        else if (ch >= 'a' && ch <= 'z') {
+            draw_xpm_colored(letters_xpm[ch - 'a'], x + i * 8, y, color);
+        }
+        else if (ch >= '0' && ch <= '9') {
+            draw_xpm_colored(numbers_xpm[ch - '0'], x + i * 8, y, color );
+        }
+        else if (ch == '(') {
+            draw_xpm_colored(letters_xpm[26], x + i * 8, y, color);
+        }
+        else if (ch == ')') {
+            draw_xpm_colored(letters_xpm[27], x + i * 8, y, color);
+        }
+            
+    }
+}
+
