@@ -69,6 +69,7 @@ typedef enum {
     normal,
     jailed, // the ghost is in the ghost house and is not free to move
     dead, // the ghost is dead and has to go back to the ghost house
+    go_jail,
 }ghost_status;
 
 typedef enum {
@@ -270,7 +271,7 @@ void pathfind(ghost *g, int target_x, int target_y){
                 ghost_d = d;
                 g->direction = down;
             }
-        }
+        } 
     }
 }
 
@@ -373,16 +374,19 @@ void (update_ghost)(){
         }else if(ghosts_state[i].status == dead){
             //move ghost to ghost house
             if(ghosts_state[i].c.x == 13 * 8 + 4 && ghosts_state[i].c.y == 11 * 8){
-                ghosts_state[i].status = jailed;
+                ghosts_state[i].status = go_jail;
+                ghosts_state[i].time = 120; // tempo da prisão do nengue
             }else{
                 pathfind(&ghosts_state[i], 13 * 8 + 4, 11 * 8);
                 move_ghost(&ghosts_state[i]);
-                pathfind(&ghosts_state[i], 13 * 8 + 4, 11 * 8);
-                move_ghost(&ghosts_state[i]);
+                if(!(ghosts_state[i].c.x == 13 * 8 + 4 && ghosts_state[i].c.y == 11 * 8)){
+                    pathfind(&ghosts_state[i], 13 * 8 + 4, 11 * 8);
+                    move_ghost(&ghosts_state[i]);
+                }
             }
         }else if(ghosts_state[i].status == jailed){
             //keep ghost in ghost house
-            if(ghosts_state[i].time != 0){
+            if(ghosts_state[i].time > 0){
                 ghosts_state[i].time--;
             }else{
                 if (ghosts_state[i].c.x > 11*8 && ghosts_state[i].c.x < 16*8
@@ -398,6 +402,14 @@ void (update_ghost)(){
                 }else{
                     ghosts_state[i].status = normal;
                 }
+            }
+        }
+        else if(ghosts_state[i].status == go_jail){
+            ghosts_state[i].direction = down;
+            move_ghost(&ghosts_state[i]);
+
+            if((ghosts_state[i].c.x == 13 * 8 + 4 && ghosts_state[i].c.y == 14 * 8 + 4)){
+                ghosts_state[i].status = jailed;
             }
         }
     }
@@ -515,6 +527,8 @@ void draw_game(){
         }else if(ghosts_state[i].status == dead){
             draw_xpm(eyes_xpm[ghosts_state[i].direction], maze_x + ghosts_state[i].c.x, maze_y + ghosts_state[i].c.y);
         } else if(ghosts_state[i].status == jailed){
+            draw_xpm(normal_ghost_xpm[i][micros / 8 % 2], maze_x + ghosts_state[i].c.x, maze_y + ghosts_state[i].c.y);
+        } else if(ghosts_state[i].status == go_jail){
             draw_xpm(normal_ghost_xpm[i][micros / 8 % 2], maze_x + ghosts_state[i].c.x, maze_y + ghosts_state[i].c.y);
         }
     }

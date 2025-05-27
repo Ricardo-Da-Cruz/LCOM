@@ -11,7 +11,6 @@
 
 #include "game.h"
 
-
 uint8_t scancode;
 
 typedef enum {
@@ -88,15 +87,6 @@ int (proj_end)(){
 
 void draw_mouse_cursor(int x, int y) {
     vg_draw_rectangle(x, y, 10, 10, 0x00FF00); // quadrado verde como cursor
-}
-
-int verify_status() {
-    // Verificar o status do teclado e retornar um valor indicando se o status é válido
-    // Exemplo: verificar se o bit de erro de paridade está definido
-    if (mouse_status & KBC_PARITY_ERR) {
-        return 0; // Status inválido
-    }
-    return 1; // Status válido
 }
 
 int (proj_menu)(){
