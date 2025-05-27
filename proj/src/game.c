@@ -107,6 +107,9 @@ coords pacman_c;
 direction_t direction;
 int pacman_lives;
 
+int score;
+int bonus_multiplier; 
+
 int loadAssets(){
     for(int i = 0; i < 4; i++){
         xpm_load(pacman[i], XPM_8_8_8, &pacman_xpm[2 * i]);
@@ -424,6 +427,11 @@ void (check_collisions)(){
                     pacman_lives--;
                     micros = 0;
                 }else{
+                    // Jackpot do jantar dos fantasmas 
+                    score += 200 * bonus_multiplier; // No pacman original é "200, 400, 800, 1600 pontos"
+                    bonus_multiplier *= 2;
+                    if(bonus_multiplier > 8) bonus_multiplier = 8; // Máximo 1600 pontos
+                    
                     ghosts_state[i].status = dead;
                 }
                 
@@ -437,11 +445,14 @@ void (check_pellets)(){
 
     if(current_pellet_matrix[pacman_c.y / 8][pacman_c.x / 8] == 1){
         num_pellets--;
+        score += 10; // 10 pontos de nhambane
         //remove pellet from maze xpm
         vg_draw_rectangle_xpm(pacman_c.x - pacman_c.x % 8, pacman_c.y - pacman_c.y % 8, 8, 8, 0, maze_xpm);
     }else if(current_pellet_matrix[pacman_c.y / 8][pacman_c.x / 8] == 2){
         num_pellets--;
-        energized_time = 200;
+        score += 50; // 50 pontos de luanda
+        energized_time = 700;
+        bonus_multiplier = 1; // debuff de ruanda
         //remove pellet from maze xpm
         vg_draw_rectangle_xpm(pacman_c.x - pacman_c.x % 8 , pacman_c.y - pacman_c.y % 8, 16, 16, 0, maze_xpm);
 
@@ -455,6 +466,7 @@ void (check_pellets)(){
     
     current_pellet_matrix[pacman_c.y / 8][pacman_c.x / 8] = 0;
 }
+
 
 void (game_logic)(){
     if (micros % 2 == 0)
@@ -479,6 +491,12 @@ void draw_ui(){
     for(int i = 0; i < pacman_lives; i++){
         draw_xpm(death_anim_xpm[0], 100 + i * 16, 110);
     }
+
+    draw_text("SCORE", 100, 130, 0xFFFFFF);
+    
+    char score_str[20];
+    sprintf(score_str, "%d", score);
+    draw_text(score_str, 100, 140, 0xFFFF00); 
 }
 
 void draw_game(){
@@ -525,6 +543,10 @@ int game(){
     energized_time = 0;
     ghost_mode = 0;
     pacman_lives = 3;
+
+    score = 0;
+    bonus_multiplier = 1; 
+
     state = playing;
 
     pacman_c = (coords) {13 * 8, 23 * 8};
@@ -581,6 +603,8 @@ int game(){
                         energized_time = 0;
                         ghost_mode = 0;
                         state = playing;
+
+                        bonus_multiplier = 1; // Resetar multiplicador de Liamba :sad
                         
                         pacman_c = (coords) {13 * 8, 23 * 8};
 
