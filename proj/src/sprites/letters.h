@@ -419,6 +419,7 @@ static const char* letter_27[] = {
   "BBBCCBBB",
   "BBCCBBBB",
   "BCBBBBBB",
+  "CCBBBBBB",
 };
 
 static const char* const* letters[] = {

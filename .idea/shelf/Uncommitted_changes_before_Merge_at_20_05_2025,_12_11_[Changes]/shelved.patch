@@ -1,0 +1,19 @@
+Index: proj/src/game.h
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>#ifndef _GAME_H_\n#define _GAME_H_\n\nint game();\n\n#endif\n
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/proj/src/game.h b/proj/src/game.h
+--- a/proj/src/game.h	(revision f4aade6901e8e57b95b891fb23eaa26b0672f62f)
++++ b/proj/src/game.h	(date 1747739463611)
+@@ -2,5 +2,8 @@
+ #define _GAME_H_
+ 
+ int game();
++void draw_text(const char *text, int x, int y);
++int loadAssets();
++
+ 
+ #endif
