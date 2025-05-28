@@ -7,11 +7,10 @@
 #include "devices/timer.h"
 #include "devices/gpu.h"
 #include "devices/i8042.h"
-#include "devices/mouse.h"
 
+
+#include "menu.h"
 #include "game.h"
-
-uint8_t scancode;
 
 typedef enum {
     MENU,
@@ -19,14 +18,20 @@ typedef enum {
     LOST,
     WON,
     EXIT,
+    SCORE,
 }game_state;
+
+#define MAX_SCORES 100
 
 uint8_t kbd_arq_set = 0;
 uint8_t timer_arq_set = 1;
-uint8_t mouse_arq_set = 2;
-struct packet mouse_packet;
-uint8_t mouse_bytes[3];
-int mouse_byte_index = 0;
+
+static game_state menu_return_state = MENU;// menu handling
+
+void start_game(void);
+void score_board(void);
+void exit_game(void);
+void back_to_menu(void);
 
 int main(int argc, char *argv[]) {
     // sets the language of LCF messages (can be either EN-US or PT-PT)
@@ -59,11 +64,6 @@ int (proj_init)(){
     if(keyboard_subscribe_int(&kbd_arq_set))return 1;
     printf("subscribing timer interrupts\n");
     if(timer_subscribe_int(&timer_arq_set))return 1;
-
-    printf("subscribing mouse interrupts\n");
-    if(mouse_subscribe_int(&mouse_arq_set)) return 1;
-    if(my_mouse_enable_data_reporting()) return 1;
-
     printf("setting graphics mode\n");
     if(set_graphics_mode(0x115)) return 1;
 
@@ -75,9 +75,6 @@ int (proj_init)(){
 }
 
 int (proj_end)(){
-    if(mouse_disable_data_reporting()) return 1;
-    if(mouse_unsubscribe_int()) return 1;
-
     if(keyboard_unsubscribe_int()) return 1;
     if(timer_unsubscribe_int()) return 1;
     if(exit_graphics_mode()) return 1;
@@ -85,109 +82,68 @@ int (proj_end)(){
     return 0;
 }
 
-void draw_mouse_cursor(int x, int y) {
-    vg_draw_rectangle(x, y, 10, 10, 0x00FF00); // quadrado verde como cursor
-}
 
 int (proj_menu)(){
-    vg_draw_rectangle(vmi.XResolution / 2 - 75, vmi.YResolution / 2, 150, 25, 0xFF0000);
-    vg_draw_rectangle(vmi.XResolution / 2 - 75, vmi.YResolution / 2 + 40, 150, 25, 0xFFFFFF);
+    Menu *m = newMenu("Main Menu");
+    menuAddFunction(m, "Start Game", start_game); 
+    menuAddFunction(m, "Score Board", score_board); 
+    menuAddFunction(m, "Exit", exit_game);       
 
-    int mouse_x = 320, mouse_y = 240;
+    menu_return_state = MENU;
 
-    draw_mouse_cursor(mouse_x, mouse_y);
+    // This handles drawing + input + selection
+    menuPost(m);
 
-    if(refresh_screen()){
-        return 4;
-    }
+    menuDelete(m);
 
-    int ipc_status;
-    message msg;
-    int r;
-    int selected = 0;
-
-    printf("waiting for ESC key\n");
-
-    while (1) {
-        // draw menu UI
-        vg_draw_rectangle(vmi.XResolution / 2 - 75, vmi.YResolution / 2, 150, 25, selected == 0 ? 0xFF0000 : 0xFFFFFF); 
-        vg_draw_rectangle(vmi.XResolution / 2 - 75, vmi.YResolution / 2 + 40, 150, 25, selected == 1 ? 0xFF0000 : 0xFFFFFF); 
-
-        draw_text("PACKMAN", vmi.XResolution / 2 - 30, vmi.YResolution / 2 - 30, 0xFFFF0);
-
-        draw_text("PLAY (ENTER)", vmi.XResolution / 2 - 40, vmi.YResolution / 2 + 6, 0xFFFFF);
-        draw_text("EXIT (ESC)", vmi.XResolution / 2 - 40, vmi.YResolution / 2 + 46, 0x00000);
-
-        if (refresh_screen()) {
-            printf("refresh_screen failed\n");
-            return 4;
-        }
-
-        if ((r = driver_receive(ANY, &msg, &ipc_status)) != 0) { 
-            printf("driver_receive failed with: %d\n", r);
-            continue;
-        }
-
-        scancode = 0;
-
-        if (is_ipc_notify(ipc_status)) {
-            switch (_ENDPOINT_P(msg.m_source)) {
-                case HARDWARE:
-                    if (msg.m_notify.interrupts & kbd_arq_set) {
-                        
-                        printf("scancode: 0x%02X\n", scancode);
-
-                        kbc_ih();
-                        if (verify_status()) {
-                            if (scancode == ESC_MAKE_CODE) return EXIT;
-                            if (scancode == W_MAKE_CODE || scancode == S_MAKE_CODE)
-                                selected = (selected + 1) % 2;
-                            if (scancode == ENTER_MAKE_CODE)
-                                return selected == 0 ? PLAYING : EXIT;
-                            printf("scancode: %02x\n", scancode);
-                        }
-                    }
-                    if (msg.m_notify.interrupts & mouse_arq_set) {
-                        mouse_ih();
-
-                        if (mouse_byte_index == 0 && (mouse_scancode & BIT(3)) == 0) break;
-
-
-                        mouse_bytes[mouse_byte_index] = mouse_scancode;
-                        mouse_byte_index++;
-
-                        if (mouse_byte_index == 3) {
-                            mouse_byte_index = 0;
-                            construct_packet(&mouse_packet, 0, mouse_bytes[0]);
-                            construct_packet(&mouse_packet, 1, mouse_bytes[1]);
-                            construct_packet(&mouse_packet, 2, mouse_bytes[2]);
-
-                            // Aqui você pode usar mouse_packet.delta_x, delta_y, lb, etc
-                            // Exemplo: desenhar o cursor (fictício)
-                            static int mouse_x = 320, mouse_y = 240;
-                            mouse_x += mouse_packet.delta_x;
-                            mouse_y -= mouse_packet.delta_y;
-
-                            if (mouse_x < 0) mouse_x = 0;
-                            if (mouse_y < 0) mouse_y = 0;
-                            if (mouse_x > vmi.XResolution - 10) mouse_x = vmi.XResolution - 10;
-                            if (mouse_y > vmi.YResolution - 10) mouse_y = vmi.YResolution - 10;
-
-                            draw_mouse_cursor(mouse_x, mouse_y); // função que desenha um cursor com XPM ou algo simples
-                        }
-                    }
-                    break;
-                default:
-                    break;
-            }
-        }
-    }
-
-
-    return EXIT;
+    return menu_return_state;
 }
 
+//score board
+int proj_score_board() {
+    Menu *m = newMenu("Score Board");
+    // Step 1: Read scores from file
+    FILE *file = fopen("/home/lcom/labs/proj/src/score.txt", "r");  // Adjust path as needed
+    if (!file) {
+        menuAddFunction(m, "Failed to open score.txt", NULL);
+    } else {
+        int scores[MAX_SCORES];
+        int count = 0;
 
+        while (count < MAX_SCORES && fscanf(file, "%d", &scores[count]) == 1) {
+            count++;
+        }
+        fclose(file);
+
+        // Step 2: Sort scores descending
+        for (int i = 0; i < count - 1; i++) {
+            for (int j = i + 1; j < count; j++) {
+                if (scores[j] > scores[i]) {
+                    int temp = scores[i];
+                    scores[i] = scores[j];
+                    scores[j] = temp;
+                }
+            }
+        }
+
+        // Step 3: Show top 3
+        char buffer[50];
+        for (int i = 0; i < count && i < 3; i++) {
+            snprintf(buffer, sizeof(buffer), "Top %d: %d", i + 1, scores[i]);
+            menuAddFunction(m, buffer, NULL);  // No function on selection
+        }
+    }
+
+    // Step 4: Add a return or exit option
+    menuAddFunction(m, "Back", back_to_menu);
+
+    menu_return_state = MENU;
+    
+    menuPost(m);
+    menuDelete(m);
+
+    return menu_return_state;
+}
 
 int (proj_play)(){
     return 0;
@@ -211,6 +167,10 @@ int(proj_main_loop)(int argc, char* argv[]) {
                 state = game();
                 break;
             case EXIT:
+                state = proj_menu();
+                break;
+            case SCORE:
+                state = proj_score_board();
                 break;
             default:
                 printf("invalid state\n");
@@ -225,3 +185,21 @@ int(proj_main_loop)(int argc, char* argv[]) {
 
     return 0;
 } 
+
+// menue functions
+void start_game() {
+    menu_return_state = PLAYING;
+}
+
+void score_board() {
+    menu_return_state = SCORE;
+}
+
+void exit_game() {
+    menu_return_state = EXIT;
+}
+
+void back_to_menu(){
+    menu_return_state = MENU;
+}
+

@@ -1,27 +1,31 @@
+#ifndef MENU_H
+#define MENU_H
+
 struct menu;
 struct menu_entry;
 
-// handy typedefs
 typedef struct menu Menu;
 typedef struct menu_entry MenuEntry;
 
 struct menu {
-    char *title; // menu title
-    MenuEntry **entries; // pointer to array of menu entries
-    int num; // number of menu entries
-    int size; // array capacity
+    char *title;
+    MenuEntry **entries;
+    int num;
+    int size;
 };
 
 struct menu_entry {
-    char *desc; // menu entry descriptive text
-    Menu *subMenu; // non-NULL if entry is submenu
-    void (*func)(); // non-NULL if entry selection calls a
+    char *desc;
+    Menu *subMenu;
+    void (*func)();
+    int selectable; 
 };
 
-Menu * newMenu(char *title); // the "constructor"
-void menuDelete(Menu *m); // destructor
-
-// Other "methods"
+Menu * newMenu(char *title);
+void menuDelete(Menu *m);
 void menuAddFunction(Menu *m, char *desc, void (*f)(void));
 void menuAddMenu(Menu *m, char *desc, Menu *sm);
-void menuPost(Menu *m); // activate the menu
+void menuPost(Menu *m);
+void menuActivateOption(Menu *menu, int index);
+
+#endif /* MENU_H */
