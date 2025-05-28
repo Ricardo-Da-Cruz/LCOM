@@ -1,0 +1,107 @@
+#ifndef XPM_SCORE_H
+#define XPM_SCORE_H
+
+static const char* score_200_xpm[] = {
+  "16 16 3 1",
+  "A c #FFFF00",
+  "B c #000000",
+  "C c None",
+  "CCCCCCCCCCCCCCCC",
+  "CAACCCAACCCAACCC",
+  "ACCACAAAACAAAACC",
+  "CCCACACCACACCACC",
+  "CCCACACCACACCACC",
+  "CCCACACCACACCACC",
+  "CCACCACCACACCACC",
+  "CACCCACCACACCACC",
+  "CACCCACCACACCACC",
+  "ACCCCACCACACCACC",
+  "ACCCCACCACACCACC",
+  "ACCCCACCACACCACC",
+  "ACCACAAAACAAAACC",
+  "CAACCCAACCCAACCC",
+  "CCCCCCCCCCCCCCCC",
+  "CCCCCCCCCCCCCCCC",
+};
+
+
+
+static const char* score_400_xpm[] = {
+  "16 16 3 1",
+  "A c #FFFF00",  // Yellow for the numbers
+  "B c #000000",  // Black for background
+  "C c None",     // Transparent
+  "CCCCCCCCCCCCCCCC",
+  "ACCCCCAACCCAACCC",
+  "ACCCCAAAACAAAACC",
+  "ACCCCACCACACCACC",
+  "ACACCACCACACCACC",
+  "ACACCACCACACCACC",
+  "ACACCACCACACCACC",
+  "ACACCACCACACCACC",
+  "AAAACACCACACCACC",
+  "CCACCACCACACCACC",
+  "CCACCACCACACCACC",
+  "CCACCACCACACCACC",
+  "CCACCAAAACAAAACC",
+  "CCCCCCAACCCAACCC",
+  "CCCCCCCCCCCCCCCC",
+  "CCCCCCCCCCCCCCCC",
+};
+
+
+static const char* score_800_xpm[] = {
+  "16 16 3 1",
+  "A c #FFFF00",  // Yellow for the numbers
+  "B c #000000",  // Black for background
+  "C c None",     // Transparent
+  "CCCCCCCCCCCCCCCC",
+  "CAACCCAACCCAACCC",
+  "ACCACAAAACAAAACC",
+  "ACCACACCACACCACC",
+  "ACCACACCACACCACC",
+  "ACCACACCACACCACC",
+  "CAACCACCACACCACC",
+  "CAACCACCACACCACC",
+  "CAACCACCACACCACC",
+  "ACCACACCACACCACC",
+  "ACCACACCACACCACC",
+  "ACCACACCACACCACC",
+  "ACCACAAAACAAAACC",
+  "CAACCCAACCCAACCC",
+  "CCCCCCCCCCCCCCCC",
+  "CCCCCCCCCCCCCCCC",
+};
+
+static const char* score_1600_xpm[] = {
+  "16 16 3 1",
+  "A c #FFFF00",  // Yellow for the numbers
+  "B c #000000",  // Black for background
+  "C c None",     // Transparent
+  "CCCCCCCCCCCCCCCC",
+  "ACCCCCCCAACCCAAC",
+  "ACCCCACAAAACAAAA",
+  "ACCCCACACCACACCA",
+  "ACCCAACACCACACCA",
+  "ACCCACCACCACACCA",
+  "ACCACCCACCACACCA",
+  "ACCACCCACCACACCA",
+  "ACCAACCACCACACCA",
+  "ACACACCACCACACCA",
+  "ACACCACACCACACCA",
+  "ACACCACACCACACCA",
+  "ACACCACAAAACAAAA",
+  "ACCAACCCAACCCAAC",
+  "CCCCCCCCCCCCCCCC",
+  "CCCCCCCCCCCCCCCC",
+};
+
+static const char* const* scori[] = {
+    score_200_xpm,
+    score_400_xpm,
+    score_800_xpm,
+    score_1600_xpm,
+};
+
+
+#endif /* XPM_SCORE_H */
