@@ -3,7 +3,7 @@
 
 static const char* score_200_xpm[] = {
   "16 16 3 1",
-  "A crgb(222, 122, 0)",
+  "A c #FFECD4",
   "B c #000000",
   "C c None",
   "CCCCCCCCCCCCCCCC",
@@ -28,7 +28,7 @@ static const char* score_200_xpm[] = {
 
 static const char* score_400_xpm[] = {
   "16 16 3 1",
-  "A crgb(222, 122, 0)",  // Yellow for the numbers
+  "A c #FFECD4",  // Yellow for the numbers
   "B c #000000",  // Black for background
   "C c None",     // Transparent
   "CCCCCCCCCCCCCCCC",
@@ -52,7 +52,7 @@ static const char* score_400_xpm[] = {
 
 static const char* score_800_xpm[] = {
   "16 16 3 1",
-  "A crgb(222, 122, 0)",  // Yellow for the numbers
+  "A c #FFECD4",  // Yellow for the numbers
   "B c #000000",  // Black for background
   "C c None",     // Transparent
   "CCCCCCCCCCCCCCCC",
@@ -75,7 +75,7 @@ static const char* score_800_xpm[] = {
 
 static const char* score_1600_xpm[] = {
   "16 16 3 1",
-  "A crgb(222, 122, 0)",  // Yellow for the numbers
+  "A c #FFECD4",  // Yellow for the numbers
   "B c #000000",  // Black for background
   "C c None",     // Transparent
   "CCCCCCCCCCCCCCCC",
