@@ -35,7 +35,7 @@ xpm_image_t normal_ghost_xpm[4][8];
 xpm_image_t scoree[4]; 
 
 xpm_image_t maze_xpm;
-xpm_image_t letters_xpm[28];
+xpm_image_t letters_xpm[29];
 xpm_image_t numbers_xpm[10];
 
 enum ghost_indexes {
@@ -140,7 +140,7 @@ int loadAssets(){
         xpm_load(death_anim[i], XPM_8_8_8, &death_anim_xpm[i]);
     }
     
-    for(int i = 0; i < 28; i++){
+    for(int i = 0; i < 29; i++){
         xpm_load(letters[i], XPM_8_8_8, &letters_xpm[i]);
     }
 
@@ -157,7 +157,7 @@ int loadAssets(){
     xpm_load(maze, XPM_8_8_8, &maze_xpm);
 
     for(int i = 0; i < 30; i++){
-        for(int j = 0; j < 28; j++){
+        for(int j = 0; j < 29; j++){
             if(pellet_matrix[i][j] == 1){ 
                 vg_draw_rectangle_xpm(j * 8 + 6, i * 8 + 4, 2, 2, pellet_color, maze_xpm);
             }else if(pellet_matrix[i][j] == 2){
@@ -706,7 +706,14 @@ int game(){
                         draw_game();
                         break;
                     case lost:
-                        if(pacman_lives == 0) return 7;
+                        if(pacman_lives == 0) {
+                            vg_draw_rectangle(0, 0, vmi.XResolution, vmi.YResolution, 0x000000);
+
+                            draw_text("GAME OVER!", vmi.XResolution / 2 - (9 * 8) / 2 - 8, vmi.YResolution / 2, 0xFFFF00);
+                            draw_text("PRESS ESC", vmi.XResolution / 2 - 5 * 8, vmi.YResolution / 2 + 20, 0xFFFFFF);
+                            break;
+                        }
+
                         else draw_respawn();
                         break;
                     case respawn:
@@ -728,7 +735,11 @@ int game(){
 
                         break;
                     case won:
-                        return 7;
+                        vg_draw_rectangle(0, 0, vmi.XResolution, vmi.YResolution, 0x000000);
+
+                        draw_text("YOU WON!", vmi.XResolution / 2 - 4 * 8, vmi.YResolution / 2, 0xFFFF00);
+                        draw_text("PRESS ESC", vmi.XResolution / 2 - 5 * 8, vmi.YResolution / 2 + 20, 0xFFFFFF);
+
                         break;
                 }
 
@@ -760,6 +771,10 @@ void draw_text(const char *text, int x, int y, uint32_t color) {
         else if (ch == ')') {
             draw_xpm_colored(letters_xpm[27], x + i * 8, y, color);
         }
+        else if (ch == '!') {
+            draw_xpm_colored(letters_xpm[28], x + i * 8, y, color);
+        }
+
             
     }
 }
