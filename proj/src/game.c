@@ -328,7 +328,6 @@ void scatter(ghost *g, int idx){
         case blinky_idx:
             //top right corner
             pathfind(g, 27 * 8 + 4, 4);
-
             break;
         case clyde_idx:
             //bottom left corner
@@ -343,7 +342,6 @@ void scatter(ghost *g, int idx){
             pathfind(g, 4, 4);
             break;
     }
-    move_ghost(g);
 }
 
 /**
@@ -743,7 +741,7 @@ int game(){
                         next_direction_time = 7;
                         break;
                     case ESC_MAKE_CODE:
-                        return 7;
+                        return 4;
                 }
             }
         }
