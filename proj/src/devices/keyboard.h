@@ -22,3 +22,4 @@ int (kbc_poll)();
 int (verify_status)();
 
 #endif
+

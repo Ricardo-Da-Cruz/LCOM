@@ -152,6 +152,7 @@ int loadAssets(){
     for(int i = 0; i < 4; i++){
         xpm_load(scori[i], XPM_8_8_8, &scoree[i]);
     }
+    
 
     xpm_load(maze, XPM_8_8_8, &maze_xpm);
 

@@ -76,3 +76,4 @@ int (kbc_poll)(){
 int (verify_status)() {
     return !(status & KBC_PARITY_ERR || status & KBC_TIMEOUT_ERR);
 }
+
