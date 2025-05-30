@@ -1,14 +1,19 @@
 #include "menu.h"
 #include <stdio.h>
 
-void e1() {printf("-e1-\n");}     
-void se1() {printf("-se1-\n");}    
+
+void e1() {printf("-e1-\n");} 
+void se1() {printf("-se1-\n");} 
 void sse1() {printf("-sse1-\n");}  
-    
 void e2() {printf("-e2-\n");}
 void se2() {printf("-se2-\n");}
 void sse2() {printf("-sse2-\n");}
 
+/**
+ * @brief Main function to demonstrate the menu structure.
+ * 
+ * @return 0 on successful execution.
+ */
 int main() {
     Menu *ssm1 = newMenu("Sub Sub Menu 1");
     menuAddFunction(ssm1, "Sub Sub Entry 1", sse1);
@@ -38,6 +43,7 @@ Menu *newMenu(char *title) {
     return m;
 }
 
+
 void menuAddFunction(Menu *m, char desc, void (*func)()) {
     MenuEntry *me = malloc(sizeof(MenuEntry));
     me->desc = desc;
@@ -46,6 +52,7 @@ void menuAddFunction(Menu *m, char desc, void (*func)()) {
     menuAdjust(m);
 }
 
+
 void menuAddMenu(Menu *m, char *desc, Menu *sm) {
     MenuEntry *me = malloc(sizeof(MenuEntry));
     me->desc = desc;
@@ -53,7 +60,6 @@ void menuAddMenu(Menu *m, char *desc, Menu *sm) {
     m->entries[m->num++] = me;
     menuAdjust(m);
 }
-
 
 void menuPost(Menu *m) {
     int choice;
@@ -71,6 +77,5 @@ void menuPost(Menu *m) {
     menuPost(m->entries[choice-1]->subMenu); // activate
     }
 }
-    //draw menu, accept user choice
-    // return index of selected entry (
+
 static int selectEntry(Menu *m) {}

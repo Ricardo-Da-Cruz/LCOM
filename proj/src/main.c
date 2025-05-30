@@ -30,7 +30,13 @@ extern uint8_t packet_bytes[3];
 extern int packet_index;
 extern bool read_error_flag;
 
-
+/**
+ * @brief Entry point of the program. Initializes LCF and delegates control to the appropriate function.
+ *
+ * @param argc Argument count.
+ * @param argv Argument vector.
+ * @return 0 on success, 1 on failure.
+ */
 int main(int argc, char *argv[]) {
     // sets the language of LCF messages (can be either EN-US or PT-PT)
     lcf_set_language("EN-US");
@@ -55,7 +61,13 @@ int main(int argc, char *argv[]) {
     return 0;
 }
 
-
+/**
+ * @brief Initializes hardware and graphics for the game.
+ *
+ * Sets up timer, keyboard, and mouse interrupts, resets and enables the mouse, and sets the video mode.
+ *
+ * @return 0 on success, 1 on failure.
+ */
 int (proj_init)(){
     if(timer_set_frequency(0, 60))return 1;
     printf("subscribing keyboard interrupts\n");
@@ -86,7 +98,14 @@ int (proj_init)(){
     return 0;
 }
 
-
+/**
+ * @brief Displays the main menu of the game and handles user interaction.
+ *
+ * Handles mouse and keyboard input to allow the user to select between starting the game or exiting. 
+ * Draws UI elements and updates the screen.
+ *
+ * @return PLAYING if the user starts the game, EXIT if the user exits.
+ */
 int (proj_menu)(){
     int selected = 0;
     printf("Starting menu with mouse support\n");
@@ -193,10 +212,22 @@ int (proj_menu)(){
     return EXIT;
 }
 
+/**
+ * @brief Placeholder for the main game loop.
+ *
+ * @return Game state to transition to after playing.
+ */
 int (proj_play)(){
     return 0;
 }
 
+/**
+ * @brief Cleans up resources before exiting the program.
+ *
+ * Disables mouse data reporting, unsubscribes interrupts, and exits graphics mode.
+ *
+ * @return 0 on success, 1 on failure.
+ */
 int (proj_end)(){
     printf("disabling mouse data reporting\n");
     mouse_write_register(MOUSE_DISABLE_DATA_REPORTING);
@@ -209,6 +240,15 @@ int (proj_end)(){
     return 0;
 }
 
+/**
+ * @brief Controls the flow of the game using a state machine.
+ *
+ * Initializes the game, then loops through game states such as MENU, PLAYING, and EXIT, calling the appropriate function for each.
+ *
+ * @param argc Argument count.
+ * @param argv Argument vector.
+ * @return 0 on success, 1 on failure.
+ */
 int(proj_main_loop)(int argc, char* argv[]) { 
 
     game_state state = MENU;

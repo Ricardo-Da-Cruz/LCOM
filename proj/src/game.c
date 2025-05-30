@@ -177,6 +177,12 @@ int loadAssets(){
     return 0;
 }
 
+/**
+ * @brief Attempts to move Pac-Man in a given direction.
+ * 
+ * @param direction The intended direction to move.
+ * @return 1 if the move is possible, 0 otherwise.
+ */
 int try_move(int direction){
     switch (direction){
         case right:
@@ -221,6 +227,11 @@ int try_move(int direction){
     return 0;
 }
 
+/**
+ * @brief Moves a ghost based on its current direction.
+ *
+ * @param g Pointer to the ghost to move.
+ */
 void move_ghost(ghost *g){
     switch (g->direction){
         case right:
@@ -240,11 +251,26 @@ void move_ghost(ghost *g){
     }
 }
 
-//distance is squared because i don't want to use sqrt
+/**
+ * @brief Calculates the Manhattan distance between two tiles.
+ *
+ * @param x1 X coordinate of the first point.
+ * @param y1 Y coordinate of the first point.
+ * @param x2 X coordinate of the second point.
+ * @param y2 Y coordinate of the second point.
+ * @return The distance.
+ */
 int distance(int x1, int y1, int x2, int y2){
     return (x1 - x2) * (x1 - x2) + (y1 - y2) * (y1 - y2);
 }
 
+/**
+ * @brief Basic pathfinding logic to direct a ghost toward a target position.
+ *
+ * @param g Pointer to the ghost.
+ * @param target_x Target X position.
+ * @param target_y Target Y position.
+ */
 void pathfind(ghost *g, int target_x, int target_y){
     //check all directions except the one the ghost came from
     int ghost_d = INT_MAX;
@@ -296,6 +322,12 @@ void pathfind(ghost *g, int target_x, int target_y){
     }
 }
 
+/**
+ * @brief Updates ghost movement using scatter behavior.
+ *
+ * @param g Pointer to the ghost.
+ * @param idx Index of the ghost.
+ */
 void scatter(ghost *g, int idx){
     switch (idx){
         case blinky_idx:
@@ -317,6 +349,12 @@ void scatter(ghost *g, int idx){
     }
 }
 
+/**
+ * @brief Updates ghost movement using chase behavior.
+ *
+ * @param g Pointer to the ghost.
+ * @param idx Index of the ghost.
+ */
 void chase(ghost *g, int idx){
     coords target = {0,0};
     int x = 14 * 8;
@@ -356,6 +394,9 @@ void chase(ghost *g, int idx){
     }
 }
 
+/**
+ * @brief Updates all ghosts' states and behaviors.
+ */
 void (update_ghost)(){
     //ghosts have two modes scatter and chase
     //in scatter mode they move to a predefined position
@@ -437,6 +478,9 @@ void (update_ghost)(){
     }
 }
 
+/**
+ * @brief Updates Pac-Man's state based on input and movement.
+ */
 void (update_pacman)(){
     //needs input buffering to prevent the need of pixel perfect movement
     if(next_direction_time != 0){
@@ -452,6 +496,9 @@ void (update_pacman)(){
     }
 }
 
+/**
+ * @brief Checks for collisions between Pac-Man and ghosts.
+ */
 void (check_collisions)(){
     for(int i = 0; i < 4; i++){
         if(ghosts_state[i].status == normal){
@@ -521,7 +568,9 @@ void clear_text_area(int x, int y, const char *text) {
 }
 */
 
-
+/**
+ * @brief Checks and updates the state of collected pellets.
+ */
 void (check_pellets)(){
     if (energized_time != 0) energized_time--;
 
@@ -549,7 +598,9 @@ void (check_pellets)(){
     current_pellet_matrix[pacman_c.y / 8][pacman_c.x / 8] = 0;
 }
 
-
+/**
+ * @brief Runs one logic step of the game loop.
+ */
 void (game_logic)(){
     if (micros % 2 == 0)
         update_pacman();
@@ -575,6 +626,9 @@ void (game_logic)(){
     }
 }
 
+/**
+ * @brief Draws UI elements such as the score and lives.
+ */
 void draw_ui(){
     draw_xpm(maze_xpm, maze_x, maze_y);
 
@@ -590,6 +644,9 @@ void draw_ui(){
     draw_text(score_str, 100, 140, 0xFFFF00); 
 }
 
+/**
+ * @brief Draws the entire game scene including characters and the map.
+ */
 void draw_game() {
     draw_xpm(pacman_xpm[direction * 2 + micros / 8 % 2], maze_x + pacman_c.x, maze_y + pacman_c.y);
 
@@ -618,12 +675,22 @@ void draw_game() {
 
     draw_mouse_cursor(mouse_x, mouse_y);
 }
+
+/**
+ * @brief Draws the animation or visuals for Pac-Man respawning.
+ */
 void draw_respawn(){
     if(micros / 6 < 12) 
         draw_xpm(death_anim_xpm[micros / 6], maze_x + pacman_c.x, maze_y + pacman_c.y);
     else
         state = respawn;
 }
+
+/**
+ * @brief Main game loop.
+ * 
+ * @return 0 on success.
+ */
 int game() {
     printf("loading assets\n");
 
@@ -777,7 +844,6 @@ int game() {
     }
     return 0;
 }
-
 
 void draw_text(const char *text, int x, int y, uint32_t color) {
     for (int i = 0; text[i] != '\0'; i++) {
