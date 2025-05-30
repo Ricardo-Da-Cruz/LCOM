@@ -24,7 +24,6 @@
 #include "sprites/letters.h"
 #include "sprites/numbers.h"
 #include "sprites/maze.h"
-#include "sprites/score.h"
 
 xpm_image_t pacman_xpm[8];
 xpm_image_t death_anim_xpm[12];
@@ -38,11 +37,6 @@ xpm_image_t scoree[4];
 xpm_image_t maze_xpm;
 xpm_image_t letters_xpm[29];
 xpm_image_t numbers_xpm[10];
-
-extern struct packet packet_struct;
-extern uint8_t packet_bytes[3];
-extern int packet_index;
-extern bool read_error_flag;
 
 enum ghost_indexes {
     right_1,
@@ -154,11 +148,6 @@ int loadAssets(){
         xpm_load(numbers[i], XPM_8_8_8, &numbers_xpm[i]);
     }
 
-    
-    for(int i = 0; i < 4; i++){
-        xpm_load(scori[i], XPM_8_8_8, &scoree[i]);
-    }
-
     xpm_load(maze, XPM_8_8_8, &maze_xpm);
 
     for(int i = 0; i < 30; i++){
@@ -183,6 +172,7 @@ int loadAssets(){
  * @param direction The intended direction to move.
  * @return 1 if the move is possible, 0 otherwise.
  */
+
 int try_move(int direction){
     switch (direction){
         case right:
@@ -227,6 +217,7 @@ int try_move(int direction){
     return 0;
 }
 
+
 /**
  * @brief Moves a ghost based on its current direction.
  *
@@ -250,6 +241,8 @@ void move_ghost(ghost *g){
             break;
     }
 }
+
+
 
 /**
  * @brief Calculates the Manhattan distance between two tiles.
@@ -328,11 +321,14 @@ void pathfind(ghost *g, int target_x, int target_y){
  * @param g Pointer to the ghost.
  * @param idx Index of the ghost.
  */
+
+ // MUDANÇA AQUI!!!!!!!!
 void scatter(ghost *g, int idx){
     switch (idx){
         case blinky_idx:
             //top right corner
             pathfind(g, 27 * 8 + 4, 4);
+
             break;
         case clyde_idx:
             //bottom left corner
@@ -347,6 +343,7 @@ void scatter(ghost *g, int idx){
             pathfind(g, 4, 4);
             break;
     }
+    move_ghost(g);
 }
 
 /**
@@ -355,6 +352,8 @@ void scatter(ghost *g, int idx){
  * @param g Pointer to the ghost.
  * @param idx Index of the ghost.
  */
+
+ // MUDANÇA AQUI!!!!!!!!
 void chase(ghost *g, int idx){
     coords target = {0,0};
     int x = 14 * 8;
@@ -393,6 +392,7 @@ void chase(ghost *g, int idx){
             break;
     }
 }
+
 
 /**
  * @brief Updates all ghosts' states and behaviors.
@@ -559,15 +559,6 @@ void display_ghost_score(int x, int y, int score) {
     // draw_text com a pontuação na posição (x, y)
 }
 
-/*
-void clear_text_area(int x, int y, const char *text) {
-    int text_width = strlen(text) * 8; 
-
-    // Desenhar retangulo para limpar tela
-    vg_draw_rectangle_xpm(x, y, text_width, 8, 0, maze_xpm); 
-}
-*/
-
 /**
  * @brief Checks and updates the state of collected pellets.
  */
@@ -626,6 +617,7 @@ void (game_logic)(){
     }
 }
 
+
 /**
  * @brief Draws UI elements such as the score and lives.
  */
@@ -647,24 +639,24 @@ void draw_ui(){
 /**
  * @brief Draws the entire game scene including characters and the map.
  */
-void draw_game() {
+void draw_game(){
     draw_xpm(pacman_xpm[direction * 2 + micros / 8 % 2], maze_x + pacman_c.x, maze_y + pacman_c.y);
 
-    for(int i = 0; i < 4; i++) {
-        if(ghosts_state[i].status == normal) {
-            if (energized_time != 0) {
+    for(int i = 0; i < 4; i++){
+        if(ghosts_state[i].status == normal){
+            if (energized_time != 0){
                 if (energized_time < 50)
                     draw_xpm(energized_ghost_xpm[micros / 8 % 4], maze_x + ghosts_state[i].c.x, maze_y + ghosts_state[i].c.y);
                 else
                     draw_xpm(energized_ghost_xpm[micros / 8 % 2], maze_x + ghosts_state[i].c.x, maze_y + ghosts_state[i].c.y);
-            } else {
+            }else{
                 draw_xpm(normal_ghost_xpm[i][micros / 8 % 2 + 2 *ghosts_state[i].direction], maze_x + ghosts_state[i].c.x, maze_y + ghosts_state[i].c.y);
             }
-        } else if(ghosts_state[i].status == dead) {
+        }else if(ghosts_state[i].status == dead){
             draw_xpm(eyes_xpm[ghosts_state[i].direction], maze_x + ghosts_state[i].c.x, maze_y + ghosts_state[i].c.y);
-        } else if(ghosts_state[i].status == jailed) {
+        } else if(ghosts_state[i].status == jailed){
             draw_xpm(normal_ghost_xpm[i][micros / 8 % 2], maze_x + ghosts_state[i].c.x, maze_y + ghosts_state[i].c.y);
-        } else if(ghosts_state[i].status == go_jail) {
+        } else if(ghosts_state[i].status == go_jail){
             draw_xpm(eyes_xpm[ghosts_state[i].direction], maze_x + ghosts_state[i].c.x, maze_y + ghosts_state[i].c.y);
         }
     }
@@ -672,9 +664,8 @@ void draw_game() {
     if (game_paused && display_score_timer > 0) {
         draw_xpm(scoree[score_display_index], maze_x + score_display_x, maze_y + score_display_y);
     }
-
-    draw_mouse_cursor(mouse_x, mouse_y);
 }
+
 
 /**
  * @brief Draws the animation or visuals for Pac-Man respawning.
@@ -686,12 +677,13 @@ void draw_respawn(){
         state = respawn;
 }
 
+
 /**
  * @brief Main game loop.
  * 
  * @return 0 on success.
  */
-int game() {
+int game(){
     printf("loading assets\n");
 
     game_paused = false;
@@ -715,7 +707,7 @@ int game() {
     pacman_lives = 3;
 
     score = 0;
-    bonus_multiplier = 1;
+    bonus_multiplier = 1; 
 
     state = playing;
 
@@ -727,13 +719,13 @@ int game() {
 
     printf("waiting for ESC key\n");
 
-    while(1) {
-        uint64_t status = await_interrupt(1 << 0 | 1 << 1 | 1 << 2); // Adiciona o mouse interrupt
+    while(1){
+        uint64_t status = await_interrupt(1 << 0 | 1 << 1);
 
-        if (status & 1 << 0) { 
+        if (status & 1 << 0) { /* subscribed interrupt */
             kbc_ih();
-            if (verify_status()) {
-                switch (scancode) {
+            if (verify_status()){
+                switch (scancode){
                     case W_MAKE_CODE:
                         next_direction = up;
                         next_direction_time = 7;
@@ -755,8 +747,8 @@ int game() {
                 }
             }
         }
-
-        if (status & 1 << 1) { 
+        if (status & 1 << 1) { /* subscribed interrupt */
+            // Primeiro, sempre processe o timer de pontuação (mesmo quando pausado)
             if (display_score_timer > 0) {
                 display_score_timer--;
                 printf("display_score_timer: %d\n", display_score_timer);
@@ -765,11 +757,12 @@ int game() {
                     printf("game_paused redefinido para false\n");
                 }
             }
-
+            
+            // Só executa a lógica do jogo se não estiver pausado
             if (!game_paused) {
                 micros++;
                 draw_ui();
-                switch (state) {
+                switch (state){
                     case playing:
                         game_logic();
                         draw_game();
@@ -777,10 +770,13 @@ int game() {
                     case lost:
                         if(pacman_lives == 0) {
                             vg_draw_rectangle(0, 0, vmi.XResolution, vmi.YResolution, 0x000000);
+
                             draw_text("GAME OVER!", vmi.XResolution / 2 - (9 * 8) / 2 - 8, vmi.YResolution / 2, 0xFFFF00);
                             draw_text("PRESS ESC", vmi.XResolution / 2 - 5 * 8, vmi.YResolution / 2 + 20, 0xFFFFFF);
                             break;
-                        } else draw_respawn();
+                        }
+
+                        else draw_respawn();
                         break;
                     case respawn:
                         micros = 0;
@@ -802,48 +798,23 @@ int game() {
                         break;
                     case won:
                         vg_draw_rectangle(0, 0, vmi.XResolution, vmi.YResolution, 0x000000);
+
                         draw_text("YOU WON!", vmi.XResolution / 2 - 4 * 8, vmi.YResolution / 2, 0xFFFF00);
                         draw_text("PRESS ESC", vmi.XResolution / 2 - 5 * 8, vmi.YResolution / 2 + 20, 0xFFFFFF);
+
                         break;
                 }
 
-                if(refresh_screen()) {
+                if(refresh_screen()){
                     printf("refresh_screen failed\n");
                     return 4;
                 }
             }
         }
-
-        if (status & 1 << 2) { 
-            mouse_ih();
-            if (!read_error_flag) {
-                mouse_synch_packet();
-                if (packet_index == 0) {
-                    mouse_build_packet();
-                    if (!packet_struct.x_ov && !packet_struct.y_ov) {
-                        int delta_x = packet_struct.delta_x / 6;
-                        int delta_y = packet_struct.delta_y / 6;
-                        if (abs(delta_x) > 0 || abs(delta_y) > 0) {
-                            mouse_x += delta_x;
-                            mouse_y -= delta_y;
-                            if (mouse_x < 0) mouse_x = 0;
-                            if (mouse_y < 0) mouse_y = 0;
-                            if (mouse_x >= vmi.XResolution - 10) mouse_x = vmi.XResolution - 11;
-                            if (mouse_y >= vmi.YResolution - 10) mouse_y = vmi.YResolution - 11;
-                        }
-                        if (packet_struct.lb) {
-                            printf("Mouse left click at (%d, %d)\n", mouse_x, mouse_y);
-                        }
-                    }
-                }
-            } else {
-                read_error_flag = false;
-                packet_index = 0;
-            }
-        }
     }
     return 0;
 }
+
 
 void draw_text(const char *text, int x, int y, uint32_t color) {
     for (int i = 0; text[i] != '\0'; i++) {
@@ -866,6 +837,6 @@ void draw_text(const char *text, int x, int y, uint32_t color) {
         else if (ch == '!') {
             draw_xpm_colored(letters_xpm[28], x + i * 8, y, color);
         }
-            
+        
     }
 }

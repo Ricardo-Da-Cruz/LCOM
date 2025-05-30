@@ -7,11 +7,10 @@
 #include "devices/timer.h"
 #include "devices/gpu.h"
 #include "devices/i8042.h"
-#include "devices/mouse.h"
 
+
+#include "menu.h"
 #include "game.h"
-
-uint8_t scancode;
 
 typedef enum {
     MENU,
@@ -19,10 +18,20 @@ typedef enum {
     LOST,
     WON,
     EXIT,
+    SCORE,
 }game_state;
+
+#define MAX_SCORES 100
 
 uint8_t kbd_arq_set = 0;
 uint8_t timer_arq_set = 1;
+
+static game_state menu_return_state = MENU;// menu handling
+
+void start_game(void);
+void score_board(void);
+void exit_game(void);
+void back_to_menu(void);
 uint8_t mouse_arq_set = 2;
 
 extern struct packet packet_struct; // From mouse.c
@@ -74,20 +83,10 @@ int (proj_init)(){
     if(keyboard_subscribe_int(&kbd_arq_set))return 1;
     printf("subscribing timer interrupts\n");
     if(timer_subscribe_int(&timer_arq_set))return 1;
-    printf("subscribing mouse interrupts\n");
-    if(mouse_subscribe_int(&mouse_arq_set))return 1;
     
-    printf("resetting mouse\n");
-    mouse_reset(); 
-    printf("enabling mouse data reporting\n");
-    if (mouse_write_register(MOUSE_ENABLE_DATA_REPORTING) != 0) {
-        printf("Failed to enable mouse data reporting\n");
-        return 1;
-    }
+
     packet_index = 0;
     read_error_flag = false;
-    mouse_x = vmi.XResolution / 2; 
-    mouse_y = vmi.YResolution / 2;
 
     printf("setting graphics mode\n");
     if(set_graphics_mode(0x115)) return 1;
@@ -107,109 +106,65 @@ int (proj_init)(){
  * @return PLAYING if the user starts the game, EXIT if the user exits.
  */
 int (proj_menu)(){
-    int selected = 0;
-    printf("Starting menu with mouse support\n");
-    int ipc_status;
-    message msg;
-    int r;
-    bool need_redraw = true;
-    int play_button_x = vmi.XResolution / 2 - 75;
-    int play_button_y = vmi.YResolution / 2;
-    int exit_button_x = vmi.XResolution / 2 - 75;
-    int exit_button_y = vmi.YResolution / 2 + 40;
+    Menu *m = newMenu("Main Menu");
+    menuAddFunction(m, "Start Game", start_game); 
+    menuAddFunction(m, "Score Board", score_board); 
+    menuAddFunction(m, "Exit", exit_game);       
 
-    while (1) {
-        if (need_redraw) {
-            bool mouse_over_play = is_point_in_rect(mouse_x, mouse_y, play_button_x, play_button_y, 150, 25);
-            bool mouse_over_exit = is_point_in_rect(mouse_x, mouse_y, exit_button_x, exit_button_y, 150, 25);
-            if (mouse_over_play) selected = 0;
-            else if (mouse_over_exit) selected = 1;
-            vg_draw_rectangle(play_button_x, play_button_y, 150, 25, 
-                             (selected == 0 || mouse_over_play) ? 0xFF0000 : 0xFFFFFF); 
-            vg_draw_rectangle(exit_button_x, exit_button_y, 150, 25, 
-                             (selected == 1 || mouse_over_exit) ? 0xFF0000 : 0xFFFFFF); 
+    menu_return_state = MENU;
 
-            draw_text("PACKMAN", vmi.XResolution / 2 - 30, vmi.YResolution / 2 - 30, 0xFFFF00);
-            draw_text("PLAY (ENTER)", play_button_x + 10, play_button_y + 6, 0x000000);
-            draw_text("EXIT (ESC)", exit_button_x + 10, exit_button_y + 6, 0x000000);
-            draw_mouse_cursor(mouse_x, mouse_y);
-            if (refresh_screen()) {
-                printf("refresh_screen failed\n");
-                return 4;
-            }
-            
-            need_redraw = false; 
+    // This handles drawing + input + selection
+    menuPost(m);
+
+    menuDelete(m);
+
+    return menu_return_state;
+}
+
+//score board
+int proj_score_board() {
+    Menu *m = newMenu("Score Board");
+    // Step 1: Read scores from file
+    FILE *file = fopen("/home/lcom/labs/proj/src/score.txt", "r");  // Adjust path as needed
+    if (!file) {
+        menuAddFunction(m, "Failed to open score.txt", NULL);
+    } else {
+        int scores[MAX_SCORES];
+        int count = 0;
+
+        while (count < MAX_SCORES && fscanf(file, "%d", &scores[count]) == 1) {
+            count++;
         }
-        if ((r = driver_receive(ANY, &msg, &ipc_status)) != 0) { 
-            printf("driver_receive failed with: %d\n", r);
-            continue;
+        fclose(file);
+
+        // Step 2: Sort scores descending
+        for (int i = 0; i < count - 1; i++) {
+            for (int j = i + 1; j < count; j++) {
+                if (scores[j] > scores[i]) {
+                    int temp = scores[i];
+                    scores[i] = scores[j];
+                    scores[j] = temp;
+                }
+            }
         }
 
-        scancode = 0;
-
-        if (is_ipc_notify(ipc_status)) {
-            switch (_ENDPOINT_P(msg.m_source)) {
-                case HARDWARE:
-                    if (msg.m_notify.interrupts & BIT(kbd_arq_set)) {
-                        kbc_ih();
-                        if (verify_status()) {
-                            if (scancode == ESC_MAKE_CODE) return EXIT;
-                            if (scancode == W_MAKE_CODE || scancode == S_MAKE_CODE) {
-                                selected = (selected + 1) % 2;
-                                need_redraw = true;
-                            }
-                            if (scancode == ENTER_MAKE_CODE)
-                                return selected == 0 ? PLAYING : EXIT;
-                            printf("scancode: %02x\n", scancode);
-                        }
-                    }
-                    if (msg.m_notify.interrupts & BIT(mouse_arq_set)) {
-                        mouse_ih(); 
-                        if (!read_error_flag) {
-                            mouse_synch_packet();
-                            if (packet_index == 0) {
-                                mouse_build_packet();
-                                if (!packet_struct.x_ov && !packet_struct.y_ov) {
-                                    int old_mouse_x = mouse_x;
-                                    int old_mouse_y = mouse_y;
-                                    int delta_x = packet_struct.delta_x / 6; 
-                                    int delta_y = packet_struct.delta_y / 6;
-                                    if (abs(delta_x) > 0 || abs(delta_y) > 0) {
-                                        mouse_x += delta_x;
-                                        mouse_y -= delta_y; 
-                                        if (mouse_x < 0) mouse_x = 0;
-                                        if (mouse_y < 0) mouse_y = 0;
-                                        if (mouse_x >= vmi.XResolution - 10) mouse_x = vmi.XResolution - 11;
-                                        if (mouse_y >= vmi.YResolution - 10) mouse_y = vmi.YResolution - 11;
-                                        if (old_mouse_x != mouse_x || old_mouse_y != mouse_y) {
-                                            need_redraw = true;
-                                        }
-                                    }
-                                    if (packet_struct.lb) {
-                                        printf("Mouse left click at (%d, %d)\n", mouse_x, mouse_y);
-                                        if (is_point_in_rect(mouse_x, mouse_y, play_button_x, play_button_y, 150, 25)) {
-                                            printf("Play button clicked!\n");
-                                            return PLAYING;
-                                        }
-                                        else if (is_point_in_rect(mouse_x, mouse_y, exit_button_x, exit_button_y, 150, 25)) {
-                                            printf("Exit button clicked!\n");
-                                            return EXIT;
-                                        }
-                                    }
-                                }
-                            }
-                        } else {
-                            read_error_flag = false;
-                            packet_index = 0;
-                        }
-                    }
-                    break;
-                default:
-                    break;
-            }
+        // Step 3: Show top 3
+        char buffer[50];
+        for (int i = 0; i < count && i < 3; i++) {
+            snprintf(buffer, sizeof(buffer), "Top %d: %d", i + 1, scores[i]);
+            menuAddFunction(m, buffer, NULL);  // No function on selection
         }
     }
-    return EXIT;
+
+    // Step 4: Add a return or exit option
+    menuAddFunction(m, "Back", back_to_menu);
+
+    menu_return_state = MENU;
+    
+    menuPost(m);
+    menuDelete(m);
+
+    return menu_return_state;
 }
 
 /**
@@ -229,10 +184,7 @@ int (proj_play)(){
  * @return 0 on success, 1 on failure.
  */
 int (proj_end)(){
-    printf("disabling mouse data reporting\n");
-    mouse_write_register(MOUSE_DISABLE_DATA_REPORTING);
     
-    if(mouse_unsubscribe_int()) return 1;
     if(keyboard_unsubscribe_int()) return 1;
     if(timer_unsubscribe_int()) return 1;
     if(exit_graphics_mode()) return 1;
@@ -255,7 +207,6 @@ int(proj_main_loop)(int argc, char* argv[]) {
 
     if (proj_init()) return 1;
 
-    printf("Starting Pacman Game with Mouse Support\n");
 
     while(state != EXIT) {
         printf("state: %d\n", state);
@@ -267,6 +218,10 @@ int(proj_main_loop)(int argc, char* argv[]) {
                 state = game();
                 break;
             case EXIT:
+                state = proj_menu();
+                break;
+            case SCORE:
+                state = proj_score_board();
                 break;
             default:
                 printf("invalid state\n");
@@ -280,4 +235,22 @@ int(proj_main_loop)(int argc, char* argv[]) {
     if (proj_end()) return 1;
 
     return 0;
+} 
+
+// menue functions
+void start_game() {
+    menu_return_state = PLAYING;
 }
+
+void score_board() {
+    menu_return_state = SCORE;
+}
+
+void exit_game() {
+    menu_return_state = EXIT;
+}
+
+void back_to_menu(){
+    menu_return_state = MENU;
+}
+
