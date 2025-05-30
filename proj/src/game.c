@@ -3,7 +3,7 @@
 #include <limits.h>
 #include <math.h>
 #include "devices/mouse.h"
-
+#include "sprites/score.h"
 #include "devices/keyboard.h"
 #include "devices/timer.h"
 #include "devices/gpu.h"
@@ -148,6 +148,12 @@ int loadAssets(){
         xpm_load(numbers[i], XPM_8_8_8, &numbers_xpm[i]);
     }
 
+    
+    for(int i = 0; i < 4; i++){
+        xpm_load(scori[i], XPM_8_8_8, &scoree[i]);
+    }
+    
+
     xpm_load(maze, XPM_8_8_8, &maze_xpm);
 
     for(int i = 0; i < 30; i++){
@@ -165,6 +171,7 @@ int loadAssets(){
 
     return 0;
 }
+
 
 /**
  * @brief Attempts to move Pac-Man in a given direction.
@@ -662,7 +669,10 @@ void draw_game(){
     if (game_paused && display_score_timer > 0) {
         draw_xpm(scoree[score_display_index], maze_x + score_display_x, maze_y + score_display_y);
     }
+
+    
 }
+
 
 
 /**
@@ -741,7 +751,7 @@ int game(){
                         next_direction_time = 7;
                         break;
                     case ESC_MAKE_CODE:
-                        return 4;
+                        return 7;
                 }
             }
         }
@@ -812,6 +822,8 @@ int game(){
     }
     return 0;
 }
+
+
 
 
 void draw_text(const char *text, int x, int y, uint32_t color) {
