@@ -1,26 +1,35 @@
-#ifndef _LCOM_MOUSE_H_
-#define _LCOM_MOUSE_H_
+#ifndef _LCOM_MOUSE_H
+#define _LCOM_MOUSE_H
+
+#include <lcom/lcf.h>
+#include "i8042.h"
+#include <stdbool.h>
 #include <stdint.h>
+enum STATE {
+  INITIAL,
+  FIRST,
+  SECOND,
+  THIRD,
+  FOURTH
+};
 
-extern uint8_t scancode;
-extern uint8_t mouse_status;
-extern uint8_t mouse_scancode;
+enum DIRECTION {
+  UP,
+  DOWN,
+  VERTEX
+};
 
+int (kbc_write_register)(uint8_t port,uint8_t message);
+int (kbc_read_register)(uint8_t port, uint8_t *message);
+int (mouse_write_register)(uint8_t command);
+int (mouse_read_command_byte)(uint8_t *value);
+void (mouse_build_packet)();
 int (mouse_subscribe_int)(uint8_t *bit_no);
-
 int (mouse_unsubscribe_int)();
-
 void (mouse_ih)();
+void (mouse_synch_packet)();
 
-int (write_mouse_cmd)(uint8_t cmd);
-
-int (construct_packet)(struct packet *packet, int p, uint8_t scancode);
-
-int (my_mouse_enable_data_reporting)(void);
-
-int (mouse_disable_data_reporting)(void);
-
-int (avoid_ibf)();
-
+int (next_state)(struct packet pp, int tolerance);
+bool (check_inbound)(int *x,int *y, int x_offset, int y_offset, int tolerance);
 
 #endif
