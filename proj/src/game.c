@@ -9,8 +9,9 @@
 #include "devices/gpu.h"
 #include "devices/i8042.h"
 #include "devices/interrupts.h"
-
+#include <stdio.h>
 #include "game.h"
+#include <unistd.h>
 
 #include "sprites/blinky.h"
 #include "sprites/clyde.h"
@@ -751,7 +752,7 @@ int game(){
                         next_direction_time = 7;
                         break;
                     case ESC_MAKE_CODE:
-                        return 7;
+                        return 4;
                 }
             }
         }
@@ -781,6 +782,25 @@ int game(){
 
                             draw_text("GAME OVER!", vmi.XResolution / 2 - (9 * 8) / 2 - 8, vmi.YResolution / 2, 0xFFFF00);
                             draw_text("PRESS ESC", vmi.XResolution / 2 - 5 * 8, vmi.YResolution / 2 + 20, 0xFFFFFF);
+
+                            printf("baaaaaaaaaaaaaaaaaaaaa");
+                            FILE *file = fopen("C:/Users/Dival/Documents/Universidade/2ANO/2_SEM/LC/shared/proj/src", "a");
+                            printf("beeeeeeeeeeeeeeeeeeeee");
+                            if (file != NULL) {
+                                printf("\n%d\n\n", score);
+
+                                fprintf(file, "%d\n", score);
+
+                                char cwd[1024];
+                                getcwd(cwd, sizeof(cwd));
+                                printf("Diretório atual: %s\n", cwd);
+
+                                fclose(file);
+                                printf("booooooooooooooooo");
+                            } else {
+                                // Erro ao abrir o arquivo
+                                printf("Erro ao abrir score.txt\n");
+                            }
                             break;
                         }
 
@@ -809,6 +829,15 @@ int game(){
 
                         draw_text("YOU WON!", vmi.XResolution / 2 - 4 * 8, vmi.YResolution / 2, 0xFFFF00);
                         draw_text("PRESS ESC", vmi.XResolution / 2 - 5 * 8, vmi.YResolution / 2 + 20, 0xFFFFFF);
+
+                        FILE *file = fopen("score.txt", "a");
+                        if (file != NULL) {
+                            fprintf(file, "%d\n", score); // Supondo que a variável 'score' exista
+                            fclose(file);
+                        } else {
+                            // Erro ao abrir o arquivo
+                            printf("Erro ao abrir score.txt\n");
+                        }
 
                         break;
                 }
