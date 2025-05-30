@@ -25,12 +25,11 @@ uint8_t kbd_arq_set = 0;
 uint8_t timer_arq_set = 1;
 uint8_t mouse_arq_set = 2;
 
-// Mouse variables
-int mouse_x = 320, mouse_y = 240; // Initial cursor position
 extern struct packet packet_struct; // From mouse.c
 extern uint8_t packet_bytes[3];
 extern int packet_index;
 extern bool read_error_flag;
+
 
 int main(int argc, char *argv[]) {
     // sets the language of LCF messages (can be either EN-US or PT-PT)
@@ -69,7 +68,7 @@ int (proj_init)(){
     printf("resetting mouse\n");
     mouse_reset(); 
     printf("enabling mouse data reporting\n");
-    if(mouse_write_register(MOUSE_ENABLE_DATA_REPORTING) != 0) {
+    if (mouse_write_register(MOUSE_ENABLE_DATA_REPORTING) != 0) {
         printf("Failed to enable mouse data reporting\n");
         return 1;
     }
@@ -87,64 +86,41 @@ int (proj_init)(){
     return 0;
 }
 
-void draw_mouse_cursor(int x, int y) {
-    // Draw a simple arrow cursor
-    vg_draw_rectangle(x, y, 2, 10, 0xFFFFFF);     // Vertical line
-    vg_draw_rectangle(x, y, 6, 2, 0xFFFFFF);      // Horizontal top
-    vg_draw_rectangle(x, y + 3, 4, 2, 0xFFFFFF);  // Middle line
-    vg_draw_rectangle(x, y + 6, 3, 2, 0xFFFFFF);  // Lower line
-}
-
-bool is_point_in_rect(int px, int py, int rx, int ry, int width, int height) {
-    return (px >= rx && px <= rx + width && py >= ry && py <= ry + height);
-}
 
 int (proj_menu)(){
     int selected = 0;
-    
     printf("Starting menu with mouse support\n");
-
     int ipc_status;
     message msg;
     int r;
+    bool need_redraw = true;
+    int play_button_x = vmi.XResolution / 2 - 75;
+    int play_button_y = vmi.YResolution / 2;
+    int exit_button_x = vmi.XResolution / 2 - 75;
+    int exit_button_y = vmi.YResolution / 2 + 40;
 
     while (1) {
-        // Clear screen (optional, depends on your implementation)
-        // vg_clear_screen(); // if you have this function
-        
-        // Draw menu UI - highlight based on mouse position or keyboard selection
-        int play_button_x = vmi.XResolution / 2 - 75;
-        int play_button_y = vmi.YResolution / 2;
-        int exit_button_x = vmi.XResolution / 2 - 75;
-        int exit_button_y = vmi.YResolution / 2 + 40;
-        
-        // Check if mouse is over buttons
-        bool mouse_over_play = is_point_in_rect(mouse_x, mouse_y, play_button_x, play_button_y, 150, 25);
-        bool mouse_over_exit = is_point_in_rect(mouse_x, mouse_y, exit_button_x, exit_button_y, 150, 25);
-        
-        // Update selected based on mouse position
-        if (mouse_over_play) selected = 0;
-        else if (mouse_over_exit) selected = 1;
-        
-        // Draw buttons
-        vg_draw_rectangle(play_button_x, play_button_y, 150, 25, 
-                         (selected == 0 || mouse_over_play) ? 0xFF0000 : 0xFFFFFF); 
-        vg_draw_rectangle(exit_button_x, exit_button_y, 150, 25, 
-                         (selected == 1 || mouse_over_exit) ? 0xFF0000 : 0xFFFFFF); 
+        if (need_redraw) {
+            bool mouse_over_play = is_point_in_rect(mouse_x, mouse_y, play_button_x, play_button_y, 150, 25);
+            bool mouse_over_exit = is_point_in_rect(mouse_x, mouse_y, exit_button_x, exit_button_y, 150, 25);
+            if (mouse_over_play) selected = 0;
+            else if (mouse_over_exit) selected = 1;
+            vg_draw_rectangle(play_button_x, play_button_y, 150, 25, 
+                             (selected == 0 || mouse_over_play) ? 0xFF0000 : 0xFFFFFF); 
+            vg_draw_rectangle(exit_button_x, exit_button_y, 150, 25, 
+                             (selected == 1 || mouse_over_exit) ? 0xFF0000 : 0xFFFFFF); 
 
-        draw_text("PACKMAN", vmi.XResolution / 2 - 30, vmi.YResolution / 2 - 30, 0xFFFF00);
-
-        draw_text("PLAY (ENTER)", play_button_x + 10, play_button_y + 6, 0x000000);
-        draw_text("EXIT (ESC)", exit_button_x + 10, exit_button_y + 6, 0x000000);
-
-        // Draw mouse cursor
-        draw_mouse_cursor(mouse_x, mouse_y);
-
-        if (refresh_screen()) {
-            printf("refresh_screen failed\n");
-            return 4;
+            draw_text("PACKMAN", vmi.XResolution / 2 - 30, vmi.YResolution / 2 - 30, 0xFFFF00);
+            draw_text("PLAY (ENTER)", play_button_x + 10, play_button_y + 6, 0x000000);
+            draw_text("EXIT (ESC)", exit_button_x + 10, exit_button_y + 6, 0x000000);
+            draw_mouse_cursor(mouse_x, mouse_y);
+            if (refresh_screen()) {
+                printf("refresh_screen failed\n");
+                return 4;
+            }
+            
+            need_redraw = false; 
         }
-
         if ((r = driver_receive(ANY, &msg, &ipc_status)) != 0) { 
             printf("driver_receive failed with: %d\n", r);
             continue;
@@ -159,39 +135,39 @@ int (proj_menu)(){
                         kbc_ih();
                         if (verify_status()) {
                             if (scancode == ESC_MAKE_CODE) return EXIT;
-                            if (scancode == W_MAKE_CODE || scancode == S_MAKE_CODE)
+                            if (scancode == W_MAKE_CODE || scancode == S_MAKE_CODE) {
                                 selected = (selected + 1) % 2;
+                                need_redraw = true;
+                            }
                             if (scancode == ENTER_MAKE_CODE)
                                 return selected == 0 ? PLAYING : EXIT;
                             printf("scancode: %02x\n", scancode);
                         }
                     }
-
                     if (msg.m_notify.interrupts & BIT(mouse_arq_set)) {
                         mouse_ih(); 
-                        
                         if (!read_error_flag) {
                             mouse_synch_packet();
-                            if (packet_index == 0) { 
+                            if (packet_index == 0) {
                                 mouse_build_packet();
-                                
                                 if (!packet_struct.x_ov && !packet_struct.y_ov) {
-                                    // Atualizar posição do cursor (sensibilidade muito baixa)
-                                    int delta_x = packet_struct.delta_x / 8; 
-                                    int delta_y = packet_struct.delta_y / 8;
-                                    mouse_x += delta_x;
-                                    mouse_y -= delta_y; 
-                                    
-                                    // Limitar aos limites da tela
-                                    if (mouse_x < 0) mouse_x = 0;
-                                    if (mouse_y < 0) mouse_y = 0;
-                                    if (mouse_x >= vmi.XResolution - 10) mouse_x = vmi.XResolution - 11;
-                                    if (mouse_y >= vmi.YResolution - 10) mouse_y = vmi.YResolution - 11;
-                                    
-                                    // Processar cliques
+                                    int old_mouse_x = mouse_x;
+                                    int old_mouse_y = mouse_y;
+                                    int delta_x = packet_struct.delta_x / 6; 
+                                    int delta_y = packet_struct.delta_y / 6;
+                                    if (abs(delta_x) > 0 || abs(delta_y) > 0) {
+                                        mouse_x += delta_x;
+                                        mouse_y -= delta_y; 
+                                        if (mouse_x < 0) mouse_x = 0;
+                                        if (mouse_y < 0) mouse_y = 0;
+                                        if (mouse_x >= vmi.XResolution - 10) mouse_x = vmi.XResolution - 11;
+                                        if (mouse_y >= vmi.YResolution - 10) mouse_y = vmi.YResolution - 11;
+                                        if (old_mouse_x != mouse_x || old_mouse_y != mouse_y) {
+                                            need_redraw = true;
+                                        }
+                                    }
                                     if (packet_struct.lb) {
                                         printf("Mouse left click at (%d, %d)\n", mouse_x, mouse_y);
-                                        
                                         if (is_point_in_rect(mouse_x, mouse_y, play_button_x, play_button_y, 150, 25)) {
                                             printf("Play button clicked!\n");
                                             return PLAYING;
@@ -202,14 +178,10 @@ int (proj_menu)(){
                                         }
                                     }
                                 }
-                                
-                                printf("Mouse: pos(%d,%d) delta(%d,%d) buttons(L:%d M:%d R:%d)\n", 
-                                    mouse_x, mouse_y, packet_struct.delta_x, packet_struct.delta_y,
-                                    packet_struct.lb, packet_struct.mb, packet_struct.rb);
                             }
                         } else {
                             read_error_flag = false;
-                            packet_index = 0; // Reset em caso de erro
+                            packet_index = 0;
                         }
                     }
                     break;
@@ -218,7 +190,6 @@ int (proj_menu)(){
             }
         }
     }
-
     return EXIT;
 }
 

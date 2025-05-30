@@ -2,6 +2,7 @@
 #include <lcom/lcf.h>
 #include <limits.h>
 #include <math.h>
+#include "devices/mouse.h"
 
 #include "devices/keyboard.h"
 #include "devices/timer.h"
@@ -37,6 +38,11 @@ xpm_image_t scoree[4];
 xpm_image_t maze_xpm;
 xpm_image_t letters_xpm[29];
 xpm_image_t numbers_xpm[10];
+
+extern struct packet packet_struct;
+extern uint8_t packet_bytes[3];
+extern int packet_index;
+extern bool read_error_flag;
 
 enum ghost_indexes {
     right_1,
@@ -584,24 +590,24 @@ void draw_ui(){
     draw_text(score_str, 100, 140, 0xFFFF00); 
 }
 
-void draw_game(){
+void draw_game() {
     draw_xpm(pacman_xpm[direction * 2 + micros / 8 % 2], maze_x + pacman_c.x, maze_y + pacman_c.y);
 
-    for(int i = 0; i < 4; i++){
-        if(ghosts_state[i].status == normal){
-            if (energized_time != 0){
+    for(int i = 0; i < 4; i++) {
+        if(ghosts_state[i].status == normal) {
+            if (energized_time != 0) {
                 if (energized_time < 50)
                     draw_xpm(energized_ghost_xpm[micros / 8 % 4], maze_x + ghosts_state[i].c.x, maze_y + ghosts_state[i].c.y);
                 else
                     draw_xpm(energized_ghost_xpm[micros / 8 % 2], maze_x + ghosts_state[i].c.x, maze_y + ghosts_state[i].c.y);
-            }else{
+            } else {
                 draw_xpm(normal_ghost_xpm[i][micros / 8 % 2 + 2 *ghosts_state[i].direction], maze_x + ghosts_state[i].c.x, maze_y + ghosts_state[i].c.y);
             }
-        }else if(ghosts_state[i].status == dead){
+        } else if(ghosts_state[i].status == dead) {
             draw_xpm(eyes_xpm[ghosts_state[i].direction], maze_x + ghosts_state[i].c.x, maze_y + ghosts_state[i].c.y);
-        } else if(ghosts_state[i].status == jailed){
+        } else if(ghosts_state[i].status == jailed) {
             draw_xpm(normal_ghost_xpm[i][micros / 8 % 2], maze_x + ghosts_state[i].c.x, maze_y + ghosts_state[i].c.y);
-        } else if(ghosts_state[i].status == go_jail){
+        } else if(ghosts_state[i].status == go_jail) {
             draw_xpm(eyes_xpm[ghosts_state[i].direction], maze_x + ghosts_state[i].c.x, maze_y + ghosts_state[i].c.y);
         }
     }
@@ -610,17 +616,15 @@ void draw_game(){
         draw_xpm(scoree[score_display_index], maze_x + score_display_x, maze_y + score_display_y);
     }
 
-    
+    draw_mouse_cursor(mouse_x, mouse_y);
 }
-
 void draw_respawn(){
     if(micros / 6 < 12) 
         draw_xpm(death_anim_xpm[micros / 6], maze_x + pacman_c.x, maze_y + pacman_c.y);
     else
         state = respawn;
 }
-
-int game(){
+int game() {
     printf("loading assets\n");
 
     game_paused = false;
@@ -644,7 +648,7 @@ int game(){
     pacman_lives = 3;
 
     score = 0;
-    bonus_multiplier = 1; 
+    bonus_multiplier = 1;
 
     state = playing;
 
@@ -656,13 +660,13 @@ int game(){
 
     printf("waiting for ESC key\n");
 
-    while(1){
-        uint64_t status = await_interrupt(1 << 0 | 1 << 1);
+    while(1) {
+        uint64_t status = await_interrupt(1 << 0 | 1 << 1 | 1 << 2); // Adiciona o mouse interrupt
 
-        if (status & 1 << 0) { /* subscribed interrupt */
+        if (status & 1 << 0) { 
             kbc_ih();
-            if (verify_status()){
-                switch (scancode){
+            if (verify_status()) {
+                switch (scancode) {
                     case W_MAKE_CODE:
                         next_direction = up;
                         next_direction_time = 7;
@@ -684,8 +688,8 @@ int game(){
                 }
             }
         }
-        if (status & 1 << 1) { /* subscribed interrupt */
-            // Primeiro, sempre processe o timer de pontuação (mesmo quando pausado)
+
+        if (status & 1 << 1) { 
             if (display_score_timer > 0) {
                 display_score_timer--;
                 printf("display_score_timer: %d\n", display_score_timer);
@@ -694,12 +698,11 @@ int game(){
                     printf("game_paused redefinido para false\n");
                 }
             }
-            
-            // Só executa a lógica do jogo se não estiver pausado
+
             if (!game_paused) {
                 micros++;
                 draw_ui();
-                switch (state){
+                switch (state) {
                     case playing:
                         game_logic();
                         draw_game();
@@ -707,12 +710,10 @@ int game(){
                     case lost:
                         if(pacman_lives == 0) {
                             vg_draw_rectangle(0, 0, vmi.XResolution, vmi.YResolution, 0x000000);
-
                             draw_text("GAME OVER!", vmi.XResolution / 2 - (9 * 8) / 2 - 8, vmi.YResolution / 2, 0xFFFF00);
                             draw_text("PRESS ESC", vmi.XResolution / 2 - 5 * 8, vmi.YResolution / 2 + 20, 0xFFFFFF);
                             break;
-                        }
-                        else draw_respawn();
+                        } else draw_respawn();
                         break;
                     case respawn:
                         micros = 0;
@@ -734,21 +735,49 @@ int game(){
                         break;
                     case won:
                         vg_draw_rectangle(0, 0, vmi.XResolution, vmi.YResolution, 0x000000);
-
                         draw_text("YOU WON!", vmi.XResolution / 2 - 4 * 8, vmi.YResolution / 2, 0xFFFF00);
                         draw_text("PRESS ESC", vmi.XResolution / 2 - 5 * 8, vmi.YResolution / 2 + 20, 0xFFFFFF);
                         break;
                 }
 
-                if(refresh_screen()){
+                if(refresh_screen()) {
                     printf("refresh_screen failed\n");
                     return 4;
                 }
             }
         }
+
+        if (status & 1 << 2) { 
+            mouse_ih();
+            if (!read_error_flag) {
+                mouse_synch_packet();
+                if (packet_index == 0) {
+                    mouse_build_packet();
+                    if (!packet_struct.x_ov && !packet_struct.y_ov) {
+                        int delta_x = packet_struct.delta_x / 6;
+                        int delta_y = packet_struct.delta_y / 6;
+                        if (abs(delta_x) > 0 || abs(delta_y) > 0) {
+                            mouse_x += delta_x;
+                            mouse_y -= delta_y;
+                            if (mouse_x < 0) mouse_x = 0;
+                            if (mouse_y < 0) mouse_y = 0;
+                            if (mouse_x >= vmi.XResolution - 10) mouse_x = vmi.XResolution - 11;
+                            if (mouse_y >= vmi.YResolution - 10) mouse_y = vmi.YResolution - 11;
+                        }
+                        if (packet_struct.lb) {
+                            printf("Mouse left click at (%d, %d)\n", mouse_x, mouse_y);
+                        }
+                    }
+                }
+            } else {
+                read_error_flag = false;
+                packet_index = 0;
+            }
+        }
     }
     return 0;
 }
+
 
 void draw_text(const char *text, int x, int y, uint32_t color) {
     for (int i = 0; text[i] != '\0'; i++) {

@@ -29,8 +29,16 @@ int (mouse_unsubscribe_int)();
 void (mouse_ih)();
 void (mouse_synch_packet)();
 int (mouse_reset)();
-
+void (draw_mouse_cursor)(int x, int y);
+bool (is_point_in_rect)(int px, int py, int rx, int ry, int width, int height);
 int (next_state)(struct packet pp, int tolerance);
 bool (check_inbound)(int *x,int *y, int x_offset, int y_offset, int tolerance);
+
+extern int mouse_x;
+extern int mouse_y;
+extern struct packet packet_struct;
+extern uint8_t packet_bytes[3];
+extern int packet_index;
+extern bool read_error_flag;
 
 #endif

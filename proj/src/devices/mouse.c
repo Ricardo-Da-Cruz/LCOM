@@ -13,6 +13,8 @@ int mouse_interrupt_id = MOUSE_IRQ;
 int packet_index = 0;
 struct packet packet_struct;
 bool read_error_flag;
+int mouse_x = 320;
+int mouse_y = 240;
 
 // State machine states
 enum STATE current_state = INITIAL;
@@ -33,6 +35,16 @@ int y_position = 0;
  * 4 -> 4 while abs(expected - current) <= tolerance & right is pressed
  * 4 -> 1 if right release, if abs(expected - current) <= tolerance or another button is clicked
 **/
+void draw_mouse_cursor(int x, int y) {
+    vg_draw_rectangle(x, y, 2, 10, 0xFFFFFF);    
+    vg_draw_rectangle(x, y, 6, 2, 0xFFFFFF);     
+    vg_draw_rectangle(x, y + 3, 4, 2, 0xFFFFFF); 
+    vg_draw_rectangle(x, y + 6, 3, 2, 0xFFFFFF); 
+}
+
+bool is_point_in_rect(int px, int py, int rx, int ry, int width, int height) {
+    return (px >= rx && px <= rx + width && py >= ry && py <= ry + height);
+}
 
 bool (check_inbound)(int *x, int *y, int x_offset, int y_offset, int tolerance) {
   int new_x_position, new_y_position;
@@ -201,29 +213,28 @@ int (mouse_reset)() {
     while(attempts--) {
         if(mouse_write_register(0xFF) == 0) {
             printf("Reset command sent, waiting for responses...\n");
-            
             if(kbc_read_register(KBC_OUT_BUF, &response) == 0 && response == MOUSE_ACK) {
                 printf("ACK received\n");
                 if(kbc_read_register(KBC_OUT_BUF, &response) == 0 && response == 0xAA) {
-                    printf("BAT passed (0xAA)\n");
-                    if(kbc_read_register(KBC_OUT_BUF, &response) == 0 && response == 0x00) {
-                        printf("Device ID received (0x00)\n");
-                        printf("Mouse reset successful\n");
-                        return 0;
-                    } else {
-                        printf("Invalid Device ID: 0x%02X\n", response);
+                  printf("BAT passed (0xAA)\n");
+                  if(kbc_read_register(KBC_OUT_BUF, &response) == 0 && response == 0x00) {
+                      printf("Device ID received (0x00)\n");
+                      printf("Mouse reset successful\n");
+                      return 0;
+                  } else {
+                      printf("Invalid Device ID: 0x%02X\n", response);
                     }
                 } else {
                     printf("BAT failed or invalid response: 0x%02X\n", response);
-                }
+                  }
             } else {
                 printf("No ACK received or invalid response: 0x%02X\n", response);
-            }
+                }   
         } else {
             printf("Failed to send reset command\n");
-        }
+          }
         printf("Reset attempt %d failed, retrying...\n", 3 - attempts);
-        tickdelay(micros_to_ticks(50000)); 
+        tickdelay(micros_to_ticks(5000)); // 5ms delay entre tentativas
     }
     printf("Mouse reset failed after all attempts\n");
     return 1;
