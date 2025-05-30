@@ -1,6 +1,4 @@
-#include "sprites/maze.h"
 #include <lcom/lcf.h>
-#include <limits.h>
 #include <math.h>
 
 #include "devices/keyboard.h"
@@ -21,7 +19,6 @@
 #include "sprites/ghost.h"
 #include "sprites/letters.h"
 #include "sprites/numbers.h"
-#include "sprites/maze.h"
 #include "sprites/score.h"
 
 #include "ghosti.h"
@@ -58,8 +55,6 @@ typedef enum {
 }game_state;
 
 game_state state;
-
-int current_pellet_matrix[31][28];
 int num_pellets;
 
 int next_direction;
@@ -68,6 +63,7 @@ int next_direction_time;
 int maze_x;
 int maze_y;
 
+int current_pellet_matrix[31][28];
 
 int pacman_lives;
 

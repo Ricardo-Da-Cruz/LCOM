@@ -8,7 +8,7 @@ PROG=proj
 SRCS = main.c game.c game.h 
 SRCS += utils.c utils.h timer.c timer.h i8042.h i8254.h vbe.h gpu.c gpu.h keyboard.c keyboard.h i8042.h interrupts.c interrupts.h mouse.c mouse.h ghosti.c ghosti.h
 SRCS += sprites/blinky.h sprites/clyde.h sprites/eyes.h sprites/inky.h sprites/pacman.h sprites/pacman2.h sprites/score.h 
-SRCS += sprites/pinky.h sprites/pacman_death_anim.h sprites/ghost.h sprites/lettets.h sprites/numbers.h sprites/maze.h
+SRCS += sprites/pinky.h sprites/pacman_death_anim.h sprites/ghost.h sprites/lettets.h sprites/numbers.h 
 
 # Set the search path for source files
 VPATH = devices:sprites:.
@@ -20,6 +20,9 @@ CFLAGS += -pedantic -O3
 # list of library dependencies (for Lab 2, only LCF library)
 DPADD += ${LIBLCF}
 LDADD += -llcf
+
+sprites/maze.o: sprites/maze.c
+	$(CC) $(CFLAGS) -c $< -o $@
 
 # include LCOM's makefile that does all the "heavy lifting"
 .include <minix.lcom.mk>

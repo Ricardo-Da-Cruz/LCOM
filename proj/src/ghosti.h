@@ -1,8 +1,8 @@
 #ifndef GHOSTIS_H
 #define GHOSTIS_H
-
-#include "devices/interrupts.h"
 #include <stdbool.h>
+#include <stdint.h>
+
 typedef enum {
     normal,
     jailed, // the ghost is in the ghost house and is not free to move
@@ -71,7 +71,6 @@ extern bool clyde_is_scared;
 extern ghost ghosts_state[4];
 extern GhostAI ghost_ai[4];
 
-
 int distance(int x1, int y1, int x2, int y2);
 void init_ghost_ai(); //
 void update_ghost_ai(int ghost_idx); //
@@ -91,5 +90,29 @@ void update_ghost(); //
 void chase(ghost *g, int idx);
 void scatter(ghost *g, int idx);
 void pathfind(ghost *g, int target_x, int target_y);
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+extern const int pellet_color;
+extern const int pellet_count;
+extern const int maze_matrix[31][28];
+extern const int pellet_matrix[31][28];
+extern const char *maze[];
+
+
 #endif // GHOSTS_H
 
