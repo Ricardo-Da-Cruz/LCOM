@@ -1,4 +1,4 @@
-
+#include "sprites/maze.h"
 #include <lcom/lcf.h>
 #include <limits.h>
 #include <math.h>
@@ -10,7 +10,6 @@
 #include "devices/interrupts.h"
 
 #include "game.h"
-
 #include "sprites/blinky.h"
 #include "sprites/clyde.h"
 #include "sprites/eyes.h"
@@ -24,6 +23,8 @@
 #include "sprites/numbers.h"
 #include "sprites/maze.h"
 #include "sprites/score.h"
+
+#include "ghosti.h"
 
 xpm_image_t pacman_xpm[8];
 xpm_image_t death_anim_xpm[12];
@@ -49,32 +50,6 @@ enum ghost_indexes {
     down_2,
 };
 
-enum ghost_xpm_idx{
-    blinky_idx,
-    clyde_idx,
-    inky_idx,
-    pinky_idx,
-};
-
-typedef enum {
-    right,
-    left,
-    up,
-    down,
-}direction_t;
-
-typedef struct{
-    int x;
-    int y;
-}coords;
-
-typedef enum {
-    normal,
-    jailed, // the ghost is in the ghost house and is not free to move
-    dead, // the ghost is dead and has to go back to the ghost house
-    go_jail,
-}ghost_status;
-
 typedef enum {
     playing,
     lost,
@@ -82,23 +57,10 @@ typedef enum {
     won,
 }game_state;
 
-typedef struct{
-    coords c;
-    int direction;
-    int time;
-    ghost_status status;
-}ghost;
-
 game_state state;
 
 int current_pellet_matrix[31][28];
 int num_pellets;
-
-uint8_t micros;
-
-int energized_time;
-bool clyde_is_scared = false;
-int ghost_mode;
 
 int next_direction;
 int next_direction_time;
@@ -106,9 +68,7 @@ int next_direction_time;
 int maze_x;
 int maze_y;
 
-ghost ghosts_state[4];
-coords pacman_c;
-direction_t direction;
+
 int pacman_lives;
 
 bool game_paused;
@@ -117,9 +77,10 @@ int display_score_timer;
 // LUGAR DA PONTUAÇÂO !!!
 int score_display_x, score_display_y;
 int score_display_index;
-
 int score;
 int bonus_multiplier; 
+
+
 
 int loadAssets(){
     for(int i = 0; i < 4; i++){
@@ -153,7 +114,6 @@ int loadAssets(){
         xpm_load(scori[i], XPM_8_8_8, &scoree[i]);
     }
     
-
     xpm_load(maze, XPM_8_8_8, &maze_xpm);
 
     for(int i = 0; i < 30; i++){
@@ -216,224 +176,7 @@ int try_move(int direction){
     return 0;
 }
 
-void move_ghost(ghost *g){
-    switch (g->direction){
-        case right:
-            g->c.x++;
-            if (g->c.x >= 27 * 8) g->c.x = 0;
-            break;
-        case left:
-            g->c.x--;
-            if (g->c.x < 0) g->c.x = 27 * 8;
-            break;
-        case up:
-            g->c.y--;
-            break;
-        case down:
-            g->c.y++;
-            break;
-    }
-}
-
-//distance is squared because i don't want to use sqrt
-int distance(int x1, int y1, int x2, int y2){
-    return (x1 - x2) * (x1 - x2) + (y1 - y2) * (y1 - y2);
-}
-
-void pathfind(ghost *g, int target_x, int target_y){
-    //check all directions except the one the ghost came from
-    int ghost_d = INT_MAX;
-
-    int dir = g->direction;
-    // right
-    if (dir != left){
-        if (maze_matrix[g->c.y / 8][(g->c.x + 8) / 8] != 1
-        && maze_matrix[(g->c.y + 7) / 8][(g->c.x + 8) / 8] != 1){
-            int d = distance(g->c.x + 8, g->c.y, target_x, target_y);
-            if (d < ghost_d){
-                ghost_d = d;
-                g->direction = right;
-            }
-        }
-    }
-    // left
-    if (dir != right){
-        if (maze_matrix[g->c.y / 8][(g->c.x - 1) / 8] != 1
-        && maze_matrix[(g->c.y + 7) / 8][(g->c.x - 1) / 8] != 1){
-            int d = distance(g->c.x - 1, g->c.y, target_x, target_y);
-            if (d < ghost_d){
-                ghost_d = d;
-                g->direction = left;
-            }
-        }
-    }
-    // up
-    if (dir != down){
-        if (maze_matrix[(g->c.y - 1) / 8][(g->c.x + 7) / 8] != 1
-        && maze_matrix[(g->c.y - 1) / 8][g->c.x / 8] != 1){
-            int d = distance(g->c.x, g->c.y - 1, target_x, target_y);
-            if (d < ghost_d){
-                ghost_d = d;
-                g->direction = up;
-            }
-        }
-    }
-    // down
-    if (dir != up){
-        if (maze_matrix[(g->c.y + 8) / 8][(g->c.x + 7) / 8] != 1
-        && maze_matrix[(g->c.y + 8) / 8][g->c.x / 8] != 1){
-            int d = distance(g->c.x, g->c.y + 8, target_x, target_y);
-            if (d < ghost_d){
-                ghost_d = d;
-                g->direction = down;
-            }
-        } 
-    }
-}
-
-void scatter(ghost *g, int idx){
-    switch (idx){
-        case blinky_idx:
-            //top right corner
-            pathfind(g, 27 * 8 + 4, 4);
-            break;
-        case clyde_idx:
-            //bottom left corner
-            pathfind(g, 4, 30 * 8 + 4);
-            break;
-        case inky_idx:
-            //bottom right corner
-            pathfind(g, 27 * 8 + 4, 30 * 8 + 4);
-            break;
-        case pinky_idx:
-            //top left corner
-            pathfind(g, 4, 4);
-            break;
-    }
-}
-
-void chase(ghost *g, int idx){
-    coords target = {0,0};
-    int x = 14 * 8;
-    int y = 11 * 8;
-    switch (idx){
-        case blinky_idx:
-            //Blinky wants to move to pacman
-            pathfind(&ghosts_state[idx], pacman_c.x, pacman_c.y);
-            break;
-        case clyde_idx:
-            //Clyde wants to move to pacman if he is far away, otherwise he wants to move to the ghost house
-            if (clyde_is_scared && ghosts_state[idx].c.x == x && ghosts_state[idx].c.y == y)
-                    clyde_is_scared = false;
-            else if (distance(ghosts_state[idx].c.x, ghosts_state[idx].c.y, pacman_c.x, pacman_c.y) < 16 * 3 * 16 * 3)
-                    clyde_is_scared = true;
-            //for performance distance is squared
-            
-            if (clyde_is_scared) pathfind(&ghosts_state[idx], x, y);                
-            else pathfind(&ghosts_state[idx], pacman_c.x, pacman_c.y);
-
-            break;
-        case inky_idx:
-            target = (coords) {pacman_c.x - (ghosts_state[blinky_idx].c.x - pacman_c.x), pacman_c.y - (ghosts_state[blinky_idx].c.y - pacman_c.y)};
-            //Inky wants to move to the reflection of pacman through blinky
-            pathfind(&ghosts_state[idx], target.x, target.y);
-            break;
-        case pinky_idx:
-            //Pinky wants to move to a position 4 blocks in front of pacman
-            target = (coords) {pacman_c.x, pacman_c.y};
-            if (direction == right) target.x += 32;
-            else if (direction == left) target.x -= 32;
-            else if (direction == up) target.y -= 32;
-            else if (direction == down) target.y += 32;
-            pathfind(&ghosts_state[idx], target.x, target.y);
-            
-            break;
-    }
-}
-
-void (update_ghost)(){
-    //ghosts have two modes scatter and chase
-    //in scatter mode they move to a predefined position
-    //pathfind doesn't need to be optimal, just minimize the linear distance to the target
-    //ghost can't make 180 degree turns unless they get energized
-
-    /*
-        | Cycle # | Scatter Duration | Chase Duration                   |
-        | ------- | ---------------- | -------------------------------- |
-        | 1       | 7 seconds        | 20 seconds                       |
-        | 2       | 7 seconds        | 20 seconds                       |
-        | 3       | 5 seconds        | 20 seconds                       |
-        | 4       | 5 seconds        | until Pac-Man dies or level ends |
-    */
-
-    if(micros / 60 == 7) ghost_mode = 1;
-    else if(micros / 60 == 27) ghost_mode = 0;
-    else if(micros / 60 == 34) ghost_mode = 1;
-    else if(micros / 60 == 54) ghost_mode = 0;
-    else if(micros / 60 == 59) ghost_mode = 1;
-
-    for(int i = 0; i < 4; i++){
-        if(ghosts_state[i].status == normal){
-            //ghost pathfinding
-            //move ghost
-            if (energized_time == 0){
-                if (ghost_mode == 0) 
-                    scatter(&ghosts_state[i], i);
-                else 
-                    chase(&ghosts_state[i], i);
-                move_ghost(&ghosts_state[i]);
-            }else{
-                //move ghost away from pacman
-                scatter(&ghosts_state[i], i);
-                move_ghost(&ghosts_state[i]);
-            }
-        }else if(ghosts_state[i].status == dead){
-            //move ghost to ghost house
-            if(ghosts_state[i].c.x == 13 * 8 + 4 && ghosts_state[i].c.y == 11 * 8){
-                ghosts_state[i].status = go_jail;
-                ghosts_state[i].time = 120; // tempo da prisão do nengue
-            }else{
-                pathfind(&ghosts_state[i], 13 * 8 + 4, 11 * 8);
-                move_ghost(&ghosts_state[i]);
-                if(!(ghosts_state[i].c.x == 13 * 8 + 4 && ghosts_state[i].c.y == 11 * 8)){
-                    pathfind(&ghosts_state[i], 13 * 8 + 4, 11 * 8);
-                    move_ghost(&ghosts_state[i]);
-                }
-            }
-        }else if(ghosts_state[i].status == jailed){
-            //keep ghost in ghost house
-            if(ghosts_state[i].time > 0){
-                ghosts_state[i].time--;
-            }else{
-                if (ghosts_state[i].c.x > 11*8 && ghosts_state[i].c.x < 16*8
-                        && ghosts_state[i].c.y  > 12*8 && ghosts_state[i].c.y < 15*8){
-                    if (ghosts_state[i].c.x == 13 * 8 + 4){
-                        ghosts_state[i].direction = up;
-                    }else if (ghosts_state[i].c.x > 13 * 8 + 4){
-                        ghosts_state[i].direction = left;
-                    }else if (ghosts_state[i].c.x < 13 * 8 + 4){
-                        ghosts_state[i].direction = right;
-                    }
-                    move_ghost(&ghosts_state[i]);
-                }else{
-                    ghosts_state[i].status = normal;
-                }
-            }
-        }
-        else if(ghosts_state[i].status == go_jail){
-            ghosts_state[i].direction = down;
-            move_ghost(&ghosts_state[i]);
-
-            if((ghosts_state[i].c.x == 13 * 8 + 4 && ghosts_state[i].c.y == 14 * 8 + 4)){
-                ghosts_state[i].status = jailed;
-                ghosts_state[i].time = 150; // tempo da prisão do nengue
-            }
-        }
-    }
-}
-
 void (update_pacman)(){
-    //needs input buffering to prevent the need of pixel perfect movement
     if(next_direction_time != 0){
         if(try_move(next_direction)){
             next_direction_time = 0;
@@ -456,19 +199,15 @@ void (check_collisions)(){
                     pacman_lives--;
                     micros = 0;
                 }else{
-                    // Jackpot do jantar dos fantasmas
                     int ghost_score = 200 * bonus_multiplier;
-                    score += ghost_score; // No pacman original é "200, 400, 800, 1600 pontos"
+                    score += ghost_score;
                     bonus_multiplier *= 2;
-                    if(bonus_multiplier > 8) bonus_multiplier = 8; // Máximo 1600 pontos
+                    if(bonus_multiplier > 8) bonus_multiplier = 8; 
 
                     ghosts_state[i].status = dead;
-
-                    // Capture the position where the ghost was eaten
                     int ghost_eaten_x = ghosts_state[i].c.x;
                     int ghost_eaten_y = ghosts_state[i].c.y;
 
-                    // Pause the game and display the score
                     printf("Antes de display_ghost_score: game_paused = %d\n", game_paused);
                     display_ghost_score(ghost_eaten_x, ghost_eaten_y, ghost_score);
                     printf("Depois de display_ghost_score: game_paused = %d\n", game_paused);
@@ -481,7 +220,7 @@ void (check_collisions)(){
 
 void display_ghost_score(int x, int y, int score) {
     game_paused = true;
-    display_score_timer = 60; // Aumentei para 1 segundo (60 frames a 60fps)
+    display_score_timer = 60; 
     
     score_display_x = x;
     score_display_y = y;
@@ -503,34 +242,20 @@ void display_ghost_score(int x, int y, int score) {
             score_display_index = 0; 
             break;
     }
-    // Se quiser exibir o score visualmente, adicione aqui
-    // draw_text com a pontuação na posição (x, y)
 }
-
-/*
-void clear_text_area(int x, int y, const char *text) {
-    int text_width = strlen(text) * 8; 
-
-    // Desenhar retangulo para limpar tela
-    vg_draw_rectangle_xpm(x, y, text_width, 8, 0, maze_xpm); 
-}
-*/
-
 
 void (check_pellets)(){
     if (energized_time != 0) energized_time--;
 
     if(current_pellet_matrix[pacman_c.y / 8][pacman_c.x / 8] == 1){
         num_pellets--;
-        score += 10; // 10 pontos de nhambane
-        //remove pellet from maze xpm
+        score += 10; 
         vg_draw_rectangle_xpm(pacman_c.x - pacman_c.x % 8, pacman_c.y - pacman_c.y % 8, 8, 8, 0, maze_xpm);
     }else if(current_pellet_matrix[pacman_c.y / 8][pacman_c.x / 8] == 2){
         num_pellets--;
-        score += 50; // 50 pontos de luanda
+        score += 50; 
         energized_time = 700;
-        bonus_multiplier = 1; // debuff de ruanda
-        //remove pellet from maze xpm
+        bonus_multiplier = 1;
         vg_draw_rectangle_xpm(pacman_c.x - pacman_c.x % 8 , pacman_c.y - pacman_c.y % 8, 16, 16, 0, maze_xpm);
 
         for(int i = 0; i < 4; i++){
@@ -545,27 +270,19 @@ void (check_pellets)(){
 }
 
 
-void (game_logic)(){
+void game_logic() {
     if (micros % 2 == 0)
         update_pacman();
-
     if (micros % 3 == 0)
         update_ghost();
-
     check_pellets();
-
     check_collisions();
-
     if(num_pellets == 0)
         state = won;
-
-    // Decrementa o temporizador de exibição da pontuação
     if (display_score_timer > 0) {
         display_score_timer--;
-        printf("display_score_timer: %d\n", display_score_timer); // Adicione esta linha para depuração
         if (display_score_timer == 0) {
             game_paused = false;
-            printf("game_paused redefinido para false\n"); // Adicione esta linha para depuração
         }
     }
 }
@@ -587,7 +304,6 @@ void draw_ui(){
 
 void draw_game(){
     draw_xpm(pacman_xpm[direction * 2 + micros / 8 % 2], maze_x + pacman_c.x, maze_y + pacman_c.y);
-
     for(int i = 0; i < 4; i++){
         if(ghosts_state[i].status == normal){
             if (energized_time != 0){
@@ -606,12 +322,9 @@ void draw_game(){
             draw_xpm(eyes_xpm[ghosts_state[i].direction], maze_x + ghosts_state[i].c.x, maze_y + ghosts_state[i].c.y);
         }
     }
-
     if (game_paused && display_score_timer > 0) {
         draw_xpm(scoree[score_display_index], maze_x + score_display_x, maze_y + score_display_y);
-    }
-
-    
+    }    
 }
 
 void draw_respawn(){
