@@ -35,19 +35,19 @@ int y_position = 0;
 **/
 
 bool (check_inbound)(int *x, int *y, int x_offset, int y_offset, int tolerance) {
-  int new_x_position; int new_y_position;
+  int new_x_position, new_y_position;
 
-  if(x_offset == 0 || y_offset == 0) return true;
+  if(x_offset == 0 && y_offset == 0) return true;
 
   new_x_position = *x + x_offset;
   new_y_position = *y + y_offset;
 
-  int lower_bound = abs(line_slope * (new_x_position)) - tolerance;
-  int upper_bound = abs(line_slope * (new_x_position)) + tolerance;
+  int lower_bound = abs(line_slope * new_x_position) - tolerance;
+  int upper_bound = abs(line_slope * new_x_position) + tolerance;
 
   if((new_y_position >= lower_bound) && (new_y_position <= upper_bound)) {
-    *x += new_x_position;
-    *y += new_y_position;
+    *x = new_x_position;  // CORREÇÃO: usar = em vez de +=
+    *y = new_y_position;  // CORREÇÃO: usar = em vez de +=
     return true;
   } else {
     *x = 0;
@@ -55,6 +55,7 @@ bool (check_inbound)(int *x, int *y, int x_offset, int y_offset, int tolerance) 
     return false;
   }
 }
+
 
 int (next_state)(struct packet pp, int tolerance) {
   switch (current_state) {
@@ -156,28 +157,26 @@ int (mouse_read_command_byte)(uint8_t *value) {
 }
 
 void (mouse_build_packet)() {
-  /*
-  struct packet {
-    uint8_t bytes[3]; // mouse packet raw bytes
-    bool rb, mb, lb;  // right, middle and left mouse buttons pressed
-    int16_t delta_x;  // mouse x-displacement: rightwards is positive
-    int16_t delta_y;  // mouse y-displacement: upwards is positive
-    bool x_ov, y_ov;  // mouse x-displacement and y-displacement overflows
-  };
-  */
   packet_struct.bytes[0] = packet_bytes[0];
   packet_struct.bytes[1] = packet_bytes[1];
   packet_struct.bytes[2] = packet_bytes[2];
+  packet_struct.rb = (packet_bytes[0] & MOUSE_RIGHT_BUTTON) != 0;
+  packet_struct.mb = (packet_bytes[0] & MOUSE_MIDDLE_BUTTON) != 0;
+  packet_struct.lb = (packet_bytes[0] & MOUSE_LEFT_BUTTON) != 0;
 
-  packet_struct.rb = (packet_bytes[0] & MOUSE_RIGHT_BUTTON);
-  packet_struct.mb = (packet_bytes[0] & MOUSE_MIDDLE_BUTTON);
-  packet_struct.lb = (packet_bytes[0] & MOUSE_LEFT_BUTTON);
+  if (packet_bytes[0] & MOUSE_MSB_X_DELTA) {
+    packet_struct.delta_x = (int16_t)(packet_bytes[1] | 0xFF00);
+  } else {
+    packet_struct.delta_x = (int16_t)packet_bytes[1];
+  }
 
-  packet_struct.delta_x = (packet_bytes[0] & MOUSE_MSB_X_DELTA) ? (0xFF00 | packet_bytes[1]) : packet_bytes[1];
-  packet_struct.delta_y = (packet_bytes[0] & MOUSE_MSB_Y_DELTA) ? (0xFF00 | packet_bytes[2]) : packet_bytes[2];
-
-  packet_struct.x_ov = (packet_bytes[0] & MOUSE_X_OVERFLOW);
-  packet_struct.y_ov = (packet_bytes[0] & MOUSE_Y_OVERFLOW);
+  if (packet_bytes[0] & MOUSE_MSB_Y_DELTA) {
+    packet_struct.delta_y = (int16_t)(packet_bytes[2] | 0xFF00);
+  } else {
+    packet_struct.delta_y = (int16_t)packet_bytes[2];
+  }
+  packet_struct.x_ov = (packet_bytes[0] & MOUSE_X_OVERFLOW) != 0;
+  packet_struct.y_ov = (packet_bytes[0] & MOUSE_Y_OVERFLOW) != 0;
 }
 
 int (mouse_subscribe_int)(uint8_t *bit_no) {
@@ -195,13 +194,53 @@ void (mouse_ih)() {
   if (kbc_read_register(KBC_OUT_BUF, &data_byte) != 0) read_error_flag = 1;
 }
 
+int (mouse_reset)() {
+    uint8_t response;
+    int attempts = 3;
+    printf("Attempting mouse reset...\n");
+    while(attempts--) {
+        if(mouse_write_register(0xFF) == 0) {
+            printf("Reset command sent, waiting for responses...\n");
+            
+            if(kbc_read_register(KBC_OUT_BUF, &response) == 0 && response == MOUSE_ACK) {
+                printf("ACK received\n");
+                if(kbc_read_register(KBC_OUT_BUF, &response) == 0 && response == 0xAA) {
+                    printf("BAT passed (0xAA)\n");
+                    if(kbc_read_register(KBC_OUT_BUF, &response) == 0 && response == 0x00) {
+                        printf("Device ID received (0x00)\n");
+                        printf("Mouse reset successful\n");
+                        return 0;
+                    } else {
+                        printf("Invalid Device ID: 0x%02X\n", response);
+                    }
+                } else {
+                    printf("BAT failed or invalid response: 0x%02X\n", response);
+                }
+            } else {
+                printf("No ACK received or invalid response: 0x%02X\n", response);
+            }
+        } else {
+            printf("Failed to send reset command\n");
+        }
+        printf("Reset attempt %d failed, retrying...\n", 3 - attempts);
+        tickdelay(micros_to_ticks(50000)); 
+    }
+    printf("Mouse reset failed after all attempts\n");
+    return 1;
+}
+
 void (mouse_synch_packet)() {
-  if(packet_index == 0 && (data_byte & BIT(3))) {
-    packet_bytes[packet_index] = data_byte;
-    packet_index++;
-  } else if (packet_index > 0) {
-    packet_bytes[packet_index] = data_byte;
-    packet_index++;
-  }
+    if (packet_index == 0) {
+        if (data_byte & BIT(3)) {
+            packet_bytes[packet_index] = data_byte;
+            packet_index++;
+        }
+    } else if (packet_index < 3) {
+        packet_bytes[packet_index] = data_byte;
+        packet_index++;
+        if (packet_index == 3) {
+            packet_index = 0;
+        }
+    }
 }
 

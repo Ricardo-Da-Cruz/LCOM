@@ -56,44 +56,33 @@ int main(int argc, char *argv[]) {
     return 0;
 }
 
-int (proj_init)(){
 
+int (proj_init)(){
     if(timer_set_frequency(0, 60))return 1;
     printf("subscribing keyboard interrupts\n");
     if(keyboard_subscribe_int(&kbd_arq_set))return 1;
     printf("subscribing timer interrupts\n");
     if(timer_subscribe_int(&timer_arq_set))return 1;
-
-    // Subscribe mouse interrupts
     printf("subscribing mouse interrupts\n");
     if(mouse_subscribe_int(&mouse_arq_set))return 1;
     
-    // Enable mouse data reporting
+    printf("resetting mouse\n");
+    mouse_reset(); 
     printf("enabling mouse data reporting\n");
     if(mouse_write_register(MOUSE_ENABLE_DATA_REPORTING) != 0) {
         printf("Failed to enable mouse data reporting\n");
         return 1;
     }
+    packet_index = 0;
+    read_error_flag = false;
+    mouse_x = vmi.XResolution / 2; 
+    mouse_y = vmi.YResolution / 2;
 
     printf("setting graphics mode\n");
     if(set_graphics_mode(0x115)) return 1;
 
     printf("loading assets for menu...\n");
     if(loadAssets()) return 1;  
-
-    return 0;
-}
-
-int (proj_end)(){
-
-    // Disable mouse data reporting before cleanup
-    printf("disabling mouse data reporting\n");
-    mouse_write_register(MOUSE_DISABLE_DATA_REPORTING);
-    
-    if(mouse_unsubscribe_int()) return 1;
-    if(keyboard_unsubscribe_int()) return 1;
-    if(timer_unsubscribe_int()) return 1;
-    if(exit_graphics_mode()) return 1;
 
     return 0;
 }
@@ -166,7 +155,6 @@ int (proj_menu)(){
         if (is_ipc_notify(ipc_status)) {
             switch (_ENDPOINT_P(msg.m_source)) {
                 case HARDWARE:
-                    // Handle keyboard interrupts
                     if (msg.m_notify.interrupts & BIT(kbd_arq_set)) {
                         kbc_ih();
                         if (verify_status()) {
@@ -178,62 +166,50 @@ int (proj_menu)(){
                             printf("scancode: %02x\n", scancode);
                         }
                     }
-                    
-                    // Handle mouse interrupts
+
                     if (msg.m_notify.interrupts & BIT(mouse_arq_set)) {
-                        mouse_ih(); // Call mouse interrupt handler from mouse.c
+                        mouse_ih(); 
                         
                         if (!read_error_flag) {
-                            mouse_synch_packet(); // Synchronize packet from mouse.c
-                            
-                            // Check if we have a complete packet (3 bytes)
-                            if (packet_index == 3) {
-                                packet_index = 0; // Reset for next packet
-                                
-                                // Build the packet structure
+                            mouse_synch_packet();
+                            if (packet_index == 0) { 
                                 mouse_build_packet();
                                 
-                                // Update mouse position
-                                mouse_x += packet_struct.delta_x;
-                                mouse_y -= packet_struct.delta_y; // Invert Y (screen coordinates)
-                                
-                                // Keep mouse within screen bounds
-                                if (mouse_x < 0) mouse_x = 0;
-                                if (mouse_y < 0) mouse_y = 0;
-                                if (mouse_x >= vmi.XResolution - 10) mouse_x = vmi.XResolution - 11;
-                                if (mouse_y >= vmi.YResolution - 10) mouse_y = vmi.YResolution - 11;
-                                
-                                // Handle mouse clicks
-                                if (packet_struct.lb) { // Left button clicked
-                                    printf("Mouse left click at (%d, %d)\n", mouse_x, mouse_y);
+                                if (!packet_struct.x_ov && !packet_struct.y_ov) {
+                                    // Atualizar posição do cursor (sensibilidade muito baixa)
+                                    int delta_x = packet_struct.delta_x / 8; 
+                                    int delta_y = packet_struct.delta_y / 8;
+                                    mouse_x += delta_x;
+                                    mouse_y -= delta_y; 
                                     
-                                    // Check if click is on play button
-                                    if (is_point_in_rect(mouse_x, mouse_y, play_button_x, play_button_y, 150, 25)) {
-                                        printf("Play button clicked!\n");
-                                        return PLAYING;
+                                    // Limitar aos limites da tela
+                                    if (mouse_x < 0) mouse_x = 0;
+                                    if (mouse_y < 0) mouse_y = 0;
+                                    if (mouse_x >= vmi.XResolution - 10) mouse_x = vmi.XResolution - 11;
+                                    if (mouse_y >= vmi.YResolution - 10) mouse_y = vmi.YResolution - 11;
+                                    
+                                    // Processar cliques
+                                    if (packet_struct.lb) {
+                                        printf("Mouse left click at (%d, %d)\n", mouse_x, mouse_y);
+                                        
+                                        if (is_point_in_rect(mouse_x, mouse_y, play_button_x, play_button_y, 150, 25)) {
+                                            printf("Play button clicked!\n");
+                                            return PLAYING;
+                                        }
+                                        else if (is_point_in_rect(mouse_x, mouse_y, exit_button_x, exit_button_y, 150, 25)) {
+                                            printf("Exit button clicked!\n");
+                                            return EXIT;
+                                        }
                                     }
-                                    // Check if click is on exit button
-                                    else if (is_point_in_rect(mouse_x, mouse_y, exit_button_x, exit_button_y, 150, 25)) {
-                                        printf("Exit button clicked!\n");
-                                        return EXIT;
-                                    }
                                 }
                                 
-                                if (packet_struct.rb) { // Right button clicked
-                                    printf("Mouse right click at (%d, %d)\n", mouse_x, mouse_y);
-                                }
-                                
-                                if (packet_struct.mb) { // Middle button clicked
-                                    printf("Mouse middle click at (%d, %d)\n", mouse_x, mouse_y);
-                                }
-                                
-                                // Debug: print packet info
                                 printf("Mouse: pos(%d,%d) delta(%d,%d) buttons(L:%d M:%d R:%d)\n", 
-                                       mouse_x, mouse_y, packet_struct.delta_x, packet_struct.delta_y,
-                                       packet_struct.lb, packet_struct.mb, packet_struct.rb);
+                                    mouse_x, mouse_y, packet_struct.delta_x, packet_struct.delta_y,
+                                    packet_struct.lb, packet_struct.mb, packet_struct.rb);
                             }
                         } else {
-                            read_error_flag = false; // Reset error flag
+                            read_error_flag = false;
+                            packet_index = 0; // Reset em caso de erro
                         }
                     }
                     break;
@@ -247,8 +223,18 @@ int (proj_menu)(){
 }
 
 int (proj_play)(){
-    // You can add mouse support to the game here as well
-    // Similar to the menu implementation
+    return 0;
+}
+
+int (proj_end)(){
+    printf("disabling mouse data reporting\n");
+    mouse_write_register(MOUSE_DISABLE_DATA_REPORTING);
+    
+    if(mouse_unsubscribe_int()) return 1;
+    if(keyboard_unsubscribe_int()) return 1;
+    if(timer_unsubscribe_int()) return 1;
+    if(exit_graphics_mode()) return 1;
+
     return 0;
 }
 

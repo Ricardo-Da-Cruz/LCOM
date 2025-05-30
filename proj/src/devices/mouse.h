@@ -28,6 +28,7 @@ int (mouse_subscribe_int)(uint8_t *bit_no);
 int (mouse_unsubscribe_int)();
 void (mouse_ih)();
 void (mouse_synch_packet)();
+int (mouse_reset)();
 
 int (next_state)(struct packet pp, int tolerance);
 bool (check_inbound)(int *x,int *y, int x_offset, int y_offset, int tolerance);
