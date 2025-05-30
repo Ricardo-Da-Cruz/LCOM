@@ -23,6 +23,7 @@
 #include "sprites/letters.h"
 #include "sprites/numbers.h"
 #include "sprites/maze.h"
+#include "sprites/score.h"
 
 xpm_image_t pacman_xpm[8];
 xpm_image_t death_anim_xpm[12];
@@ -30,6 +31,8 @@ xpm_image_t death_anim_xpm[12];
 xpm_image_t energized_ghost_xpm[4];
 xpm_image_t eyes_xpm[8];
 xpm_image_t normal_ghost_xpm[4][8];
+
+xpm_image_t scoree[4]; 
 
 xpm_image_t maze_xpm;
 xpm_image_t letters_xpm[29];
@@ -69,6 +72,7 @@ typedef enum {
     normal,
     jailed, // the ghost is in the ghost house and is not free to move
     dead, // the ghost is dead and has to go back to the ghost house
+    go_jail,
 }ghost_status;
 
 typedef enum {
@@ -107,6 +111,13 @@ coords pacman_c;
 direction_t direction;
 int pacman_lives;
 
+bool game_paused;
+
+int display_score_timer;
+// LUGAR DA PONTUAÇÂO !!!
+int score_display_x, score_display_y;
+int score_display_index;
+
 int score;
 int bonus_multiplier; 
 
@@ -135,6 +146,11 @@ int loadAssets(){
 
     for(int i = 0; i < 10; i++){
         xpm_load(numbers[i], XPM_8_8_8, &numbers_xpm[i]);
+    }
+
+    
+    for(int i = 0; i < 4; i++){
+        xpm_load(scori[i], XPM_8_8_8, &scoree[i]);
     }
 
     xpm_load(maze, XPM_8_8_8, &maze_xpm);
@@ -270,7 +286,7 @@ void pathfind(ghost *g, int target_x, int target_y){
                 ghost_d = d;
                 g->direction = down;
             }
-        }
+        } 
     }
 }
 
@@ -373,16 +389,19 @@ void (update_ghost)(){
         }else if(ghosts_state[i].status == dead){
             //move ghost to ghost house
             if(ghosts_state[i].c.x == 13 * 8 + 4 && ghosts_state[i].c.y == 11 * 8){
-                ghosts_state[i].status = jailed;
+                ghosts_state[i].status = go_jail;
+                ghosts_state[i].time = 120; // tempo da prisão do nengue
             }else{
                 pathfind(&ghosts_state[i], 13 * 8 + 4, 11 * 8);
                 move_ghost(&ghosts_state[i]);
-                pathfind(&ghosts_state[i], 13 * 8 + 4, 11 * 8);
-                move_ghost(&ghosts_state[i]);
+                if(!(ghosts_state[i].c.x == 13 * 8 + 4 && ghosts_state[i].c.y == 11 * 8)){
+                    pathfind(&ghosts_state[i], 13 * 8 + 4, 11 * 8);
+                    move_ghost(&ghosts_state[i]);
+                }
             }
         }else if(ghosts_state[i].status == jailed){
             //keep ghost in ghost house
-            if(ghosts_state[i].time != 0){
+            if(ghosts_state[i].time > 0){
                 ghosts_state[i].time--;
             }else{
                 if (ghosts_state[i].c.x > 11*8 && ghosts_state[i].c.x < 16*8
@@ -398,6 +417,15 @@ void (update_ghost)(){
                 }else{
                     ghosts_state[i].status = normal;
                 }
+            }
+        }
+        else if(ghosts_state[i].status == go_jail){
+            ghosts_state[i].direction = down;
+            move_ghost(&ghosts_state[i]);
+
+            if((ghosts_state[i].c.x == 13 * 8 + 4 && ghosts_state[i].c.y == 14 * 8 + 4)){
+                ghosts_state[i].status = jailed;
+                ghosts_state[i].time = 150; // tempo da prisão do nengue
             }
         }
     }
@@ -427,18 +455,66 @@ void (check_collisions)(){
                     pacman_lives--;
                     micros = 0;
                 }else{
-                    // Jackpot do jantar dos fantasmas 
-                    score += 200 * bonus_multiplier; // No pacman original é "200, 400, 800, 1600 pontos"
+                    // Jackpot do jantar dos fantasmas
+                    int ghost_score = 200 * bonus_multiplier;
+                    score += ghost_score; // No pacman original é "200, 400, 800, 1600 pontos"
                     bonus_multiplier *= 2;
                     if(bonus_multiplier > 8) bonus_multiplier = 8; // Máximo 1600 pontos
-                    
+
                     ghosts_state[i].status = dead;
+
+                    // Capture the position where the ghost was eaten
+                    int ghost_eaten_x = ghosts_state[i].c.x;
+                    int ghost_eaten_y = ghosts_state[i].c.y;
+
+                    // Pause the game and display the score
+                    printf("Antes de display_ghost_score: game_paused = %d\n", game_paused);
+                    display_ghost_score(ghost_eaten_x, ghost_eaten_y, ghost_score);
+                    printf("Depois de display_ghost_score: game_paused = %d\n", game_paused);
+
                 }
-                
             }
         }
     }
 }
+
+void display_ghost_score(int x, int y, int score) {
+    game_paused = true;
+    display_score_timer = 60; // Aumentei para 1 segundo (60 frames a 60fps)
+    
+    score_display_x = x;
+    score_display_y = y;
+
+    switch(score) {
+        case 200:
+            score_display_index = 0;
+            break;
+        case 400:
+            score_display_index = 1;
+            break;
+        case 800:
+            score_display_index = 2;
+            break;
+        case 1600:
+            score_display_index = 3;
+            break;
+        default:
+            score_display_index = 0; 
+            break;
+    }
+    // Se quiser exibir o score visualmente, adicione aqui
+    // draw_text com a pontuação na posição (x, y)
+}
+
+/*
+void clear_text_area(int x, int y, const char *text) {
+    int text_width = strlen(text) * 8; 
+
+    // Desenhar retangulo para limpar tela
+    vg_draw_rectangle_xpm(x, y, text_width, 8, 0, maze_xpm); 
+}
+*/
+
 
 void (check_pellets)(){
     if (energized_time != 0) energized_time--;
@@ -476,12 +552,21 @@ void (game_logic)(){
         update_ghost();
 
     check_pellets();
-    
+
     check_collisions();
-    
+
     if(num_pellets == 0)
         state = won;
 
+    // Decrementa o temporizador de exibição da pontuação
+    if (display_score_timer > 0) {
+        display_score_timer--;
+        printf("display_score_timer: %d\n", display_score_timer); // Adicione esta linha para depuração
+        if (display_score_timer == 0) {
+            game_paused = false;
+            printf("game_paused redefinido para false\n"); // Adicione esta linha para depuração
+        }
+    }
 }
 
 void draw_ui(){
@@ -516,7 +601,13 @@ void draw_game(){
             draw_xpm(eyes_xpm[ghosts_state[i].direction], maze_x + ghosts_state[i].c.x, maze_y + ghosts_state[i].c.y);
         } else if(ghosts_state[i].status == jailed){
             draw_xpm(normal_ghost_xpm[i][micros / 8 % 2], maze_x + ghosts_state[i].c.x, maze_y + ghosts_state[i].c.y);
+        } else if(ghosts_state[i].status == go_jail){
+            draw_xpm(eyes_xpm[ghosts_state[i].direction], maze_x + ghosts_state[i].c.x, maze_y + ghosts_state[i].c.y);
         }
+    }
+
+    if (game_paused && display_score_timer > 0) {
+        draw_xpm(scoree[score_display_index], maze_x + score_display_x, maze_y + score_display_y);
     }
 
     
@@ -531,6 +622,14 @@ void draw_respawn(){
 
 int game(){
     printf("loading assets\n");
+
+    game_paused = false;
+
+    display_score_timer = 0;
+
+    score_display_x = 0;
+    score_display_y = 0;
+    score_display_index = 0;
 
     loadAssets();
 
@@ -586,8 +685,20 @@ int game(){
             }
         }
         if (status & 1 << 1) { /* subscribed interrupt */
-            micros++;
-            draw_ui();
+            // Primeiro, sempre processe o timer de pontuação (mesmo quando pausado)
+            if (display_score_timer > 0) {
+                display_score_timer--;
+                printf("display_score_timer: %d\n", display_score_timer);
+                if (display_score_timer == 0) {
+                    game_paused = false;
+                    printf("game_paused redefinido para false\n");
+                }
+            }
+            
+            // Só executa a lógica do jogo se não estiver pausado
+            if (!game_paused) {
+                micros++;
+                draw_ui();
                 switch (state){
                     case playing:
                         game_logic();
@@ -610,8 +721,8 @@ int game(){
                         ghost_mode = 0;
                         state = playing;
 
-                        bonus_multiplier = 1; // Resetar multiplicador de Liamba :sad
-                        
+                        bonus_multiplier = 1;
+
                         pacman_c = (coords) {13 * 8, 23 * 8};
 
                         //reset ghosts
@@ -628,14 +739,14 @@ int game(){
                         draw_text("PRESS ESC", vmi.XResolution / 2 - 5 * 8, vmi.YResolution / 2 + 20, 0xFFFFFF);
                         break;
                 }
-                
+
                 if(refresh_screen()){
                     printf("refresh_screen failed\n");
                     return 4;
                 }
+            }
         }
     }
-
     return 0;
 }
 

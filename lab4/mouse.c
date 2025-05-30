@@ -9,9 +9,10 @@ uint8_t mouse_status;
 uint8_t mouse_scancode;
 
 int (mouse_subscribe_int)(uint8_t *bit_no) {
-    mouse_hook_id = *bit_no;
-    *bit_no = BIT(*bit_no);
-    return sys_irqsetpolicy(MOUSE_IRQ, IRQ_REENABLE | IRQ_EXCLUSIVE, &mouse_hook_id);
+    mouse_hook_id = *bit_no; // Salva o hook_id original
+    if (sys_irqsetpolicy(MOUSE_IRQ, IRQ_REENABLE | IRQ_EXCLUSIVE, &mouse_hook_id)) return 1;
+    *bit_no = BIT(mouse_hook_id); // dDevolve o bit mask
+    return 0;
 }
 
 int (mouse_unsubscribe_int)() {
@@ -19,8 +20,10 @@ int (mouse_unsubscribe_int)() {
 }
 
 void (mouse_ih)(){
-    util_sys_inb(KBC_ST_REG, &mouse_status);
-    util_sys_inb(KBC_OUT_BUF,&mouse_scancode);
+    if (util_sys_inb(KBC_ST_REG, &mouse_status)) return;
+    if ((mouse_status & KBC_OBF) && (mouse_status & KBC_AUX)) {
+        util_sys_inb(KBC_OUT_BUF, &mouse_scancode);
+    }
 }
 
 int (avoid_ibf)() {
