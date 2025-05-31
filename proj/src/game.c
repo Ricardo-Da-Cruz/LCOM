@@ -121,6 +121,7 @@ int score_display_index;
 
 int score;
 int bonus_multiplier; 
+int score_saved;
 
 int loadAssets(){
     for(int i = 0; i < 4; i++){
@@ -752,12 +753,28 @@ int game(){
                         next_direction_time = 7;
                         break;
                     case ESC_MAKE_CODE:
-                         if (state == won || state == game_lost) {
-                            return 5;
+                        if (state == won || state == game_lost) {
+                           if (!score_saved) {
+                                FILE *file = fopen("/home/lcom/labs/proj/src/score.txt", "a+"); 
+                                if (file) {
+                                    // Move to the end and check last char
+                                    fseek(file, -1, SEEK_END);
+                                    int last = fgetc(file);
+                                    if (last != '\n') fputc('\n', file); // Add newline if not present
+
+                                    fprintf(file, "%d\n", score);
+                                    fclose(file);
+                                    score_saved = true;
+                                    printf("Score %d saved to file\n", score);
+                                } else {
+                                    printf("Erro ao abrir score.txt\n");
+                                }
+                            }
+                            return 5; // Return to scoreboard
                         } else {
                             printf("Exiting to MENU\n");
                             return 0;
-                        }
+                    }
                 }
             }
         }
@@ -776,7 +793,9 @@ int game(){
             if (!game_paused) {
                 micros++;
                 draw_ui();
-                FILE *file = fopen("/home/lcom/labs/proj/src/score.txt", "a");
+
+                
+                
                 switch (state){
                     case playing:
                         game_logic();
@@ -796,24 +815,6 @@ int game(){
                             draw_text("GAME OVER!", vmi.XResolution / 2 - (9 * 8) / 2 - 8, vmi.YResolution / 2, 0xFFFF00);
                             draw_text("PRESS ESC", vmi.XResolution / 2 - 5 * 8, vmi.YResolution / 2 + 20, 0xFFFFFF);
 
-                            printf("A");
-                            
-                            printf("B");
-                            if (file != NULL) {
-                                printf("\n%d\n\n", score);
-
-                                fprintf(file, "%d\n", score);
-
-                                char cwd[1024];
-                                getcwd(cwd, sizeof(cwd));
-                                printf("Diretório atual: %s\n", cwd);
-
-                                fclose(file);
-                                printf("END");
-                            } else {
-                                // Erro ao abrir o arquivo
-                                printf("Erro ao abrir score.txt\n");
-                            }
                             break;
                     case respawn:
                         micros = 0;
@@ -838,14 +839,6 @@ int game(){
 
                         draw_text("YOU WON!", vmi.XResolution / 2 - 4 * 8, vmi.YResolution / 2, 0xFFFF00);
                         draw_text("PRESS ESC", vmi.XResolution / 2 - 5 * 8, vmi.YResolution / 2 + 20, 0xFFFFFF);
-
-                        if (file != NULL) {
-                            fprintf(file, "%d\n", score); // Supondo que a variável 'score' exista
-                            fclose(file);
-                        } else {
-                            // Erro ao abrir o arquivo
-                            printf("Erro ao abrir score.txt\n");
-                        }
 
                         break;
                 }
