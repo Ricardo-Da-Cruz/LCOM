@@ -125,7 +125,7 @@ int (proj_menu)(){
 int proj_score_board() {
     Menu *m = newMenu("Score Board");
     // Step 1: Read scores from file
-    FILE *file = fopen("score.txt", "r");  // Adjust path as needed
+    FILE *file = fopen("/home/lcom/labs/proj/src/score.txt", "r");  // Adjust path as needed
     if (!file) {
         menuAddFunction(m, "Failed to open score.txt", NULL);
     } else {
