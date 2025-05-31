@@ -1,0 +1,37 @@
+\doxysection{menu.\+h}
+\hypertarget{menu_8h_source}{}\label{menu_8h_source}
+\begin{DoxyCode}{0}
+\DoxyCodeLine{00001\ \textcolor{preprocessor}{\#ifndef\ MENU\_H}}
+\DoxyCodeLine{00002\ \textcolor{preprocessor}{\#define\ MENU\_H}}
+\DoxyCodeLine{00003\ }
+\DoxyCodeLine{00004\ \textcolor{keyword}{struct\ }\mbox{\hyperlink{structmenu}{menu}};}
+\DoxyCodeLine{00005\ \textcolor{keyword}{struct\ }\mbox{\hyperlink{structmenu__entry}{menu\_entry}};}
+\DoxyCodeLine{00006\ }
+\DoxyCodeLine{00007\ \textcolor{keyword}{typedef}\ \textcolor{keyword}{struct\ }\mbox{\hyperlink{structmenu}{menu}}\ \mbox{\hyperlink{structmenu}{Menu}};}
+\DoxyCodeLine{00008\ \textcolor{keyword}{typedef}\ \textcolor{keyword}{struct\ }\mbox{\hyperlink{structmenu__entry}{menu\_entry}}\ \mbox{\hyperlink{structmenu__entry}{MenuEntry}};}
+\DoxyCodeLine{00009\ }
+\DoxyCodeLine{00014\ \textcolor{keyword}{struct\ }\mbox{\hyperlink{structmenu}{menu}}\ \{}
+\DoxyCodeLine{00015\ \ \ \ \ \textcolor{keywordtype}{char}\ *title;}
+\DoxyCodeLine{00016\ \ \ \ \ \mbox{\hyperlink{structmenu__entry}{MenuEntry}}\ **entries;}
+\DoxyCodeLine{00017\ \ \ \ \ \textcolor{keywordtype}{int}\ num;}
+\DoxyCodeLine{00018\ \ \ \ \ \textcolor{keywordtype}{int}\ size;}
+\DoxyCodeLine{00019\ \};}
+\DoxyCodeLine{00020\ }
+\DoxyCodeLine{00025\ \textcolor{keyword}{struct\ }\mbox{\hyperlink{structmenu__entry}{menu\_entry}}\ \{}
+\DoxyCodeLine{00026\ \ \ \ \ \textcolor{keywordtype}{char}\ *desc;}
+\DoxyCodeLine{00027\ \ \ \ \ \mbox{\hyperlink{structmenu}{Menu}}\ *subMenu;}
+\DoxyCodeLine{00028\ \ \ \ \ void\ (*func)();}
+\DoxyCodeLine{00029\ \ \ \ \ \textcolor{keywordtype}{int}\ selectable;\ }
+\DoxyCodeLine{00030\ \};}
+\DoxyCodeLine{00031\ }
+\DoxyCodeLine{00032\ \mbox{\hyperlink{structmenu}{Menu}}\ *\ newMenu(\textcolor{keywordtype}{char}\ *title);}
+\DoxyCodeLine{00033\ \textcolor{keywordtype}{void}\ menuDelete(\mbox{\hyperlink{structmenu}{Menu}}\ *m);}
+\DoxyCodeLine{00034\ \textcolor{keywordtype}{void}\ menuAddFunction(\mbox{\hyperlink{structmenu}{Menu}}\ *m,\ \textcolor{keywordtype}{char}\ *desc,\ \textcolor{keywordtype}{void}\ (*f)(\textcolor{keywordtype}{void}));}
+\DoxyCodeLine{00035\ }
+\DoxyCodeLine{00042\ \textcolor{keywordtype}{void}\ \mbox{\hyperlink{menu_8c_a4b3b3c758875eee1bc1d7c17252879bc}{menuAddMenu}}(\mbox{\hyperlink{structmenu}{Menu}}\ *m,\ \textcolor{keywordtype}{char}\ *desc,\ \mbox{\hyperlink{structmenu}{Menu}}\ *sm);}
+\DoxyCodeLine{00043\ \textcolor{keywordtype}{void}\ menuPost(\mbox{\hyperlink{structmenu}{Menu}}\ *m);}
+\DoxyCodeLine{00044\ \textcolor{keywordtype}{void}\ menuActivateOption(\mbox{\hyperlink{structmenu}{Menu}}\ *\mbox{\hyperlink{structmenu}{menu}},\ \textcolor{keywordtype}{int}\ index);}
+\DoxyCodeLine{00045\ }
+\DoxyCodeLine{00046\ \textcolor{preprocessor}{\#endif\ }\textcolor{comment}{/*\ MENU\_H\ */}\textcolor{preprocessor}{}}
+
+\end{DoxyCode}

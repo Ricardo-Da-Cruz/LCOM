@@ -1,3 +1,31 @@
+/**
+ * @file game.c
+ * @brief Implementação da lógica principal do jogo Pac-Man.
+ *
+ * Este arquivo contém toda a lógica de gameplay do Pac-Man, incluindo:
+ * - Movimentação do Pac-Man e controle de direções
+ * - Comportamento e inteligência artificial dos fantasmas (Blinky, Pinky, Inky, Clyde)
+ * - Sistema de estados dos fantasmas (normal, assustado, morto, preso)
+ * - Detecção de colisões entre Pac-Man e fantasmas
+ * - Sistema de pontuação e multiplicadores de bônus
+ * - Carregamento e renderização de sprites e animações
+ * - Controle do estado do jogo (jogando, perdeu, ganhou, respawn)
+ * - Gerenciamento da matriz de pellets e power pellets
+ * - Renderização completa do labirinto e elementos do jogo
+ *
+ * O jogo implementa um sistema de máquina de estados para controlar diferentes
+ * fases do gameplay, desde o menu inicial até as animações de morte e vitória.
+ * Os fantasmas possuem comportamentos únicos e algoritmos de pathfinding para
+ * perseguir o jogador de forma inteligente.
+ *
+ * @note Complexidade de Tempo: O(1) por frame para a maioria das operações,
+ * com algumas operações de pathfinding que podem ser O(n) onde n é o número
+ * de posições válidas no labirinto.
+ * @note Complexidade de Espaço: O(n*m) onde n e m são as dimensões da matriz
+ * do labirinto (31x28 neste caso).
+ * @version 1.0
+ */
+
 #include <lcom/lcf.h>
 #include <limits.h>
 #include <math.h>
@@ -189,7 +217,6 @@ int try_move(int direction){
                 pacman_c.x = 0;
                 return 1;
             }
-
             if (maze_matrix[pacman_c.y / 8][(pacman_c.x + 8) / 8] == 0
                 && maze_matrix[(pacman_c.y + 7) / 8][(pacman_c.x + 8) / 8] == 0){
                 pacman_c.x++;

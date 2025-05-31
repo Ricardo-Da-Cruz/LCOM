@@ -1,3 +1,33 @@
+/**
+ * @file menu.c
+ * @brief Sistema de menus interativos e interface de usuário.
+ *
+ * Este arquivo implementa um sistema completo de menus para o jogo Pac-Man:
+ * - Estrutura de dados dinâmica para criação de menus flexíveis
+ * - Sistema de renderização de texto usando sprites de letras e números
+ * - Navegação por teclado com suporte a setas e teclas WASD
+ * - Diferentes tipos de entradas de menu (funções, submenus, labels)
+ * - Interface para tela de pontuações com leitura de arquivo
+ * - Suporte a menus aninhados e hierárquicos
+ * - Renderização com destaque visual para opção selecionada
+ *
+ * O sistema de menus é implementado usando uma estrutura de dados dinâmica
+ * que permite adicionar diferentes tipos de entradas: funções executáveis,
+ * submenus para navegação hierárquica, e labels informativos não-selecionáveis.
+ * 
+ * A renderização utiliza sprites XPM para caracteres, permitindo texto
+ * customizado que mantém a estética pixel art do jogo. O sistema suporta
+ * navegação intuitiva e feedback visual para melhorar a experiência do usuário.
+ *
+ * @note A estrutura Menu utiliza realocação dinâmica para crescer conforme
+ * necessário, começando com capacidade inicial de 4 entradas.
+ * @note Complexidade de Tempo: O(n) para renderização onde n é o número de
+ * entradas do menu; O(1) para navegação.
+ * @note Complexidade de Espaço: O(n) onde n é o número total de entradas
+ * em todos os menus carregados.
+ * @version 1.0
+ */
+
 #include "menu.h"
 #include <lcom/lcf.h>
 #include <lcom/proj.h>

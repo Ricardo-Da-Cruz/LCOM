@@ -1,3 +1,62 @@
+/**
+ * @file game.c
+ * @brief Implementação da lógica principal do jogo Pac-Man.
+ *
+ * Este arquivo contém toda a lógica de gameplay do Pac-Man, incluindo:
+ * - Movimentação do Pac-Man e controle de direções
+ * - Comportamento e inteligência artificial dos fantasmas (Blinky, Pinky, Inky, Clyde)
+ * - Sistema de estados dos fantasmas (normal, assustado, morto, preso)
+ * - Detecção de colisões entre Pac-Man e fantasmas
+ * - Sistema de pontuação e multiplicadores de bônus
+ * - Carregamento e renderização de sprites e animações
+ * - Controle do estado do jogo (jogando, perdeu, ganhou, respawn)
+ * - Gerenciamento da matriz de pellets e power pellets
+ * - Renderização completa do labirinto e elementos do jogo
+ *
+ * O jogo implementa um sistema de máquina de estados para controlar diferentes
+ * fases do gameplay, desde o menu inicial até as animações de morte e vitória.
+ * Os fantasmas possuem comportamentos únicos e algoritmos de pathfinding para
+ * perseguir o jogador de forma inteligente.
+ *
+ * @note Complexidade de Tempo: O(1) por frame para a maioria das operações,
+ * com algumas operações de pathfinding que podem ser O(n) onde n é o número
+ * de posições válidas no labirinto.
+ * @note Complexidade de Espaço: O(n*m) onde n e m são as dimensões da matriz
+ * do labirinto (31x28 neste caso).
+ * @version 1.0
+ */
+
+/**
+ * @file main.c
+ * @brief Ponto de entrada principal e controle de fluxo do programa Pac-Man.
+ *
+ * Este arquivo contém a estrutura principal do programa, implementando:
+ * - Inicialização do sistema LCF (LCOM Framework)
+ * - Configuração de interrupções de hardware (teclado, timer, mouse)
+ * - Máquina de estados principal do programa (MENU, PLAYING, SCORE, EXIT)
+ * - Gerenciamento de transições entre diferentes estados do jogo
+ * - Inicialização do modo gráfico e recursos do sistema
+ * - Sistema de pontuação e persistência de scores em arquivo
+ * - Limpeza de recursos e finalização adequada do programa
+ *
+ * O programa utiliza uma arquitetura baseada em máquina de estados, onde cada
+ * estado representa uma fase diferente da aplicação (menu principal, jogo ativo,
+ * tela de pontuações, etc.). A comunicação entre estados é feita através de
+ * códigos de retorno das funções de cada estado.
+ *
+ * A inicialização inclui configuração de interrupções de hardware necessárias
+ * para input do usuário (teclado e mouse) e temporização (timer), bem como
+ * a configuração do modo gráfico VBE para renderização.
+ *
+ * @note O programa utiliza o framework LCF para abstração de hardware específico
+ * do MINIX, facilitando o desenvolvimento de aplicações em modo protegido.
+ * @note A frequência do timer é configurada para 60Hz para gameplay suave.
+ * 
+ * @author [Seu Nome]
+ * @date [Data]
+ * @version 1.0
+ */
+
 #include <lcom/lcf.h>
 #include <lcom/proj.h>
 #include <stdint.h>
