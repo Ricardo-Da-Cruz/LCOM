@@ -418,12 +418,14 @@ void (update_ghost)(){
         | 3       | 5 seconds        | 20 seconds                       |
         | 4       | 5 seconds        | until Pac-Man dies or level ends |
     */
+   int seconds = micros / 60;
 
-    if(micros / 60 == 7) ghost_mode = 1;
-    else if(micros / 60 == 27) ghost_mode = 0;
-    else if(micros / 60 == 34) ghost_mode = 1;
-    else if(micros / 60 == 54) ghost_mode = 0;
-    else if(micros / 60 == 59) ghost_mode = 1;
+    if (seconds < 7) ghost_mode = 0; // Scatter
+    else if (seconds < 27) ghost_mode = 1; // Chase
+    else if (seconds < 34) ghost_mode = 0;
+    else if (seconds < 54) ghost_mode = 1;
+    else if (seconds < 59) ghost_mode = 0;
+    else ghost_mode = 1;
 
     for(int i = 0; i < 4; i++){
         if(ghosts_state[i].status == normal){
