@@ -123,7 +123,7 @@ game_state state;
 int current_pellet_matrix[31][28];
 int num_pellets;
 
-uint8_t micros;
+uint32_t micros;
 
 int energized_time;
 bool clyde_is_scared = false;
@@ -427,6 +427,7 @@ void chase(ghost *g, int idx){
     }
 }
 
+int seconds1 = 0;
 
 /**
  * @brief Updates all ghosts' states and behaviors.
@@ -822,8 +823,6 @@ int game(){
             if (!game_paused) {
                 micros++;
                 draw_ui();
-
-                
                 
                 switch (state){
                     case playing:
